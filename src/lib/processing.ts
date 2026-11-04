@@ -465,7 +465,9 @@ export function buildArgs(
     );
     if (s.format === "mp4") args.push("-profile:a", "aac_low");
   } else args.push("-an");
-  args.push("-frames:v", String(t.frames), "-t", t.duration.toFixed(7));
+  // trim=end_frame already bounds the video. In FFmpeg.wasm an output -frames:v
+  // also stops the muxer before padded/filtered audio reaches its end.
+  args.push("-t", t.duration.toFixed(7));
   if (s.metadata === "strip")
     args.push(
       "-map_metadata",
