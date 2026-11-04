@@ -23,3 +23,11 @@ test('actual pinned FFmpeg WASM core: probe, video/audio encode, aligned RGB ext
   await writeFile(path.join(dir,'wasm.mp4'),cleaned);await exec('ffmpeg',['-v','error','-xerror','-i',path.join(dir,'wasm.mp4'),'-f','null','-']);
  }finally{if(previous)Object.defineProperty(globalThis,'self',previous);else Reflect.deleteProperty(globalThis,'self');await rm(dir,{recursive:true,force:true});}
 });
+
+test('worker handoff keeps final result bytes available for MP4 inspection and download',async()=>{
+ const {writeRetained}=await import('../src/lib/pipeline');
+ const original=new Uint8Array([0,0,0,8,102,114,101,101]);
+ const worker={writeFile:async(_name:string,data:unknown)=>{const bytes=data as Uint8Array;structuredClone(bytes,{transfer:[bytes.buffer]});return true;}};
+ await writeRetained(worker as never,'final.mp4',original);
+ assert.equal(original.length,8);assert.equal(new DataView(original.buffer).getUint32(0),8);
+});
