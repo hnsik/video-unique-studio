@@ -38,6 +38,7 @@ import {
   type Task,
 } from "@/lib/storage";
 import { createPlan } from "@/lib/queue";
+import RuntimeStatus from "./RuntimeStatus";
 import { csv, reports, saveDownload, createZip } from "@/lib/export";
 type Source = {
   id: string;
@@ -526,7 +527,7 @@ export default function Home() {
           </div>
         </div>
         <div className="header-actions">
-          <span className="privacy">● Локальная обработка</span>
+          <RuntimeStatus />
           <button
             className="btn ghost"
             disabled={busy}

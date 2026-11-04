@@ -1,4 +1,5 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
+import { createDesktopEngine } from "./desktop-engine";
 import {
   buildArgs,
   dimensions,
@@ -66,8 +67,14 @@ export type Observer = {
   stage: (s: string, progress: number) => void;
   progress: (p: number) => void;
 };
+export type EngineFiles = {
+  writeFile: (name: string, data: Uint8Array | string) => Promise<unknown>;
+  readFile: (name: string, encoding?: string) => Promise<Uint8Array | string>;
+  deleteFile: (name: string) => Promise<unknown>;
+  ffprobe: (args: string[], timeout?: number) => Promise<number>;
+};
 export type Engine = {
-  ff: FFmpeg;
+  ff: EngineFiles;
   destroy: () => void;
   run: (args: string[], duration?: number) => Promise<void>;
   cancelled: () => boolean;
@@ -76,6 +83,12 @@ export async function createEngine(
   observer: Observer,
   isCancelled: () => boolean,
 ): Promise<Engine> {
+  if (typeof window !== "undefined" && window.videoUniqueDesktop)
+    return createDesktopEngine(
+      window.videoUniqueDesktop,
+      observer,
+      isCancelled,
+    );
   const ff = new FFmpeg();
   let expected = 0;
   let lastError = "";
@@ -133,13 +146,13 @@ export async function createEngine(
   }
 }
 export async function writeRetained(
-  ff: Pick<FFmpeg, "writeFile">,
+  ff: Pick<EngineFiles, "writeFile">,
   name: string,
   data: Uint8Array,
 ) {
   await ff.writeFile(name, new Uint8Array(data));
 }
-async function bytes(ff: FFmpeg, name: string) {
+async function bytes(ff: EngineFiles, name: string) {
   const d = await ff.readFile(name);
   if (typeof d === "string") throw Error("Некорректные данные видео");
   return new Uint8Array(d);

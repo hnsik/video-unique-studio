@@ -793,3 +793,12 @@ fieldset:disabled {
   margin-left: auto;
   color: #f4a6b1 !important;
 }
+
+.desktop-runtime {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.desktop-runtime .privacy {
+  margin: 0;
+}
