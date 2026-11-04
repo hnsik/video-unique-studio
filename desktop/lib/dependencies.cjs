@@ -64,6 +64,22 @@ async function saveConfig(root, pair) {
   await fs.writeFile(temp, JSON.stringify(pair));
   await fs.rename(temp, path.join(root, "tools.json"));
 }
+async function managedPairs(root, ext = ".exe") {
+  const base = path.join(root, "tools");
+  const names = [manifest.version];
+  try {
+    for (const entry of await fs.readdir(base, { withFileTypes: true }))
+      if (entry.isDirectory() && entry.name.startsWith(manifest.version + "-"))
+        names.push(entry.name);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  return names.map((name) => ({
+    ffmpeg: path.join(base, name, "ffmpeg" + ext),
+    ffprobe: path.join(base, name, "ffprobe" + ext),
+    source: "cache",
+  }));
+}
 async function candidates(
   root,
   platform = process.platform,
@@ -78,11 +94,7 @@ async function candidates(
       ffprobe: config.ffprobe,
       source: "saved",
     });
-  result.push({
-    ffmpeg: path.join(root, "tools", manifest.version, "ffmpeg" + ext),
-    ffprobe: path.join(root, "tools", manifest.version, "ffprobe" + ext),
-    source: "cache",
-  });
+  result.push(...await managedPairs(root, ext));
   const dirs = (env.PATH || env.Path || "")
     .split(platform === "win32" ? ";" : ":")
     .filter(Boolean);
@@ -189,9 +201,16 @@ async function downloadArchive(
 async function installArchive(archive, root, { validate = validatePair } = {}) {
   const base = path.join(root, "tools");
   await fs.mkdir(base, { recursive: true });
-  const stage = path.join(base, "stage-" + randomUUID()),
-    target = path.join(base, manifest.version);
+  // A just-executed EXE can remain locked by Windows/security software.
+  // Extract directly into a unique final directory: never move executed files.
+  for (const pair of await managedPairs(root)) {
+    try {
+      return await validate(pair.ffmpeg, pair.ffprobe);
+    } catch {}
+  }
+  const stage = path.join(base, manifest.version + "-" + randomUUID());
   await fs.mkdir(stage);
+  let installed = false;
   try {
     const zip = new AdmZip(archive),
       found = new Set();
@@ -213,34 +232,21 @@ async function installArchive(archive, root, { validate = validatePair } = {}) {
     }
     if (!found.has("ffmpeg.exe") || !found.has("ffprobe.exe"))
       throw Error("В архиве нет FFmpeg/FFprobe");
-    await validate(
-      path.join(stage, "ffmpeg.exe"),
-      path.join(stage, "ffprobe.exe"),
-    );
     await fs.writeFile(
       path.join(stage, "SOURCE-AND-LICENSE.txt"),
       `FFmpeg ${manifest.version}\nBuild: ${manifest.provider}\nSource: ${manifest.source}\nLicense: ${manifest.license}\nArchive SHA256: ${manifest.sha256}\n`,
     );
-    // Another app instance may have installed the same verified version in the meantime.
-    try {
-      await fs.rename(stage, target);
-    } catch (error) {
-      try {
-        await validate(
-          path.join(target, "ffmpeg.exe"),
-          path.join(target, "ffprobe.exe"),
-        );
-      } catch {
-        await fs.rm(target, { recursive: true, force: true });
-        await fs.rename(stage, target);
-      }
-    }
-    return await validate(
-      path.join(target, "ffmpeg.exe"),
-      path.join(target, "ffprobe.exe"),
+    const result = await validate(
+      path.join(stage, "ffmpeg.exe"),
+      path.join(stage, "ffprobe.exe"),
     );
+    installed = true;
+    return result;
   } finally {
-    await fs.rm(stage, { recursive: true, force: true });
+    if (!installed)
+      await fs.rm(stage, {
+        recursive: true, force: true, maxRetries: 10, retryDelay: 200,
+      }).catch(() => {});
   }
 }
 async function ensureTools({

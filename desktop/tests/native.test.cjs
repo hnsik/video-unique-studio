@@ -171,6 +171,24 @@ test("archive installer accepts only expected binary basenames and validates bef
     };
     const result = await installArchive(archive, root, { validate });
     assert(path.isAbsolute(result.ffmpeg));
+    // Every executable is checked in its final location, never renamed after execution.
+    assert.match(path.basename(path.dirname(result.ffmpeg)), /^9\.0\.2-/);
+    const originalRename = fs.rename;
+    try {
+      fs.rename = async () => {
+        throw Object.assign(Error("Windows executable directory locked"), { code: "EPERM" });
+      };
+      const fresh = await installArchive(archive, path.join(root, "locked-windows"), { validate });
+      await validate(fresh.ffmpeg, fresh.ffprobe);
+      const reused = await installArchive(archive, path.join(root, "locked-windows"), { validate });
+      assert.equal(reused.ffmpeg, fresh.ffmpeg);
+    } finally {
+      fs.rename = originalRename;
+    }
+    const cached = await ensureTools({ root: path.join(root, "locked-windows"), platform: "win32", env: {}, validate });
+    assert.equal(cached.source, "cache");
+    const saved = await ensureTools({ root: path.join(root, "locked-windows"), platform: "win32", env: {}, validate });
+    assert.equal(saved.source, "saved");
     await assert.rejects(() => fs.stat(path.join(root, "outside.txt")));
     const broken = new AdmZip();
     broken.addFile("bad/ffmpeg.exe", Buffer.from("broken"));
