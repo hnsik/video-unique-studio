@@ -1,8 +1,104 @@
-export type FrameMetrics={mae:number;ssim:number;hashDistance:number;hashA:string;hashB:string;heat:Uint8ClampedArray};
-const luma=(p:Uint8Array,i:number)=>.2126*p[i]+.7152*p[i+1]+.0722*p[i+2];
-export function perceptualHash(rgb:Uint8Array,w:number,h:number){const gray=new Float64Array(1024);for(let y=0;y<32;y++)for(let x=0;x<32;x++){const i=(Math.min(h-1,Math.floor((y+.5)*h/32))*w+Math.min(w-1,Math.floor((x+.5)*w/32)))*3;gray[y*32+x]=luma(rgb,i);}const values:number[]=[];for(let v=0;v<8;v++)for(let u=0;u<8;u++){let sum=0;for(let y=0;y<32;y++)for(let x=0;x<32;x++)sum+=gray[y*32+x]*Math.cos((2*x+1)*u*Math.PI/64)*Math.cos((2*y+1)*v*Math.PI/64);values.push(sum);}const sorted=values.slice(1).sort((a,b)=>a-b),median=sorted[31];return values.map((v,i)=>i===0?'0':v>median?'1':'0').join('');}
-export function compareFrames(a:Uint8Array,b:Uint8Array,w:number,h:number):FrameMetrics{
- if(a.length!==w*h*3||b.length!==a.length)throw Error('Кадры должны иметь одинаковый размер RGB24');let sum=0;const heat=new Uint8ClampedArray(w*h*4);for(let i=0;i<a.length;i+=3){const d=(Math.abs(a[i]-b[i])+Math.abs(a[i+1]-b[i+1])+Math.abs(a[i+2]-b[i+2]))/3;sum+=d*3;const j=i/3*4;heat[j]=Math.min(255,d*8);heat[j+1]=Math.min(255,d*2);heat[j+2]=0;heat[j+3]=255;}
- let total=0,blocks=0;for(let y=0;y<h;y+=8)for(let x=0;x<w;x+=8){let sa=0,sb=0,saa=0,sbb=0,sab=0,n=0;for(let yy=y;yy<Math.min(y+8,h);yy++)for(let xx=x;xx<Math.min(x+8,w);xx++){const i=(yy*w+xx)*3,A=luma(a,i),B=luma(b,i);sa+=A;sb+=B;saa+=A*A;sbb+=B*B;sab+=A*B;n++;}const ma=sa/n,mb=sb/n,va=Math.max(0,saa/n-ma*ma),vb=Math.max(0,sbb/n-mb*mb),cov=sab/n-ma*mb;total+=((2*ma*mb+6.5025)*(2*cov+58.5225))/((ma*ma+mb*mb+6.5025)*(va+vb+58.5225));blocks++;}
- const hashA=perceptualHash(a,w,h),hashB=perceptualHash(b,w,h);return {mae:sum/a.length,ssim:total/blocks,hashDistance:[...hashA].filter((c,i)=>c!==hashB[i]).length,hashA,hashB,heat};
+export type FrameMetrics = {
+  mae: number;
+  ssim: number;
+  hashDistance: number;
+  hashA: string;
+  hashB: string;
+  heat: Uint8ClampedArray;
+};
+const luma = (p: Uint8Array, i: number) =>
+  0.2126 * p[i] + 0.7152 * p[i + 1] + 0.0722 * p[i + 2];
+export function perceptualHash(rgb: Uint8Array, w: number, h: number) {
+  const gray = new Float64Array(1024);
+  for (let y = 0; y < 32; y++)
+    for (let x = 0; x < 32; x++) {
+      const i =
+        (Math.min(h - 1, Math.floor(((y + 0.5) * h) / 32)) * w +
+          Math.min(w - 1, Math.floor(((x + 0.5) * w) / 32))) *
+        3;
+      gray[y * 32 + x] = luma(rgb, i);
+    }
+  const values: number[] = [];
+  for (let v = 0; v < 8; v++)
+    for (let u = 0; u < 8; u++) {
+      let sum = 0;
+      for (let y = 0; y < 32; y++)
+        for (let x = 0; x < 32; x++)
+          sum +=
+            gray[y * 32 + x] *
+            Math.cos(((2 * x + 1) * u * Math.PI) / 64) *
+            Math.cos(((2 * y + 1) * v * Math.PI) / 64);
+      values.push(sum);
+    }
+  const sorted = values.slice(1).sort((a, b) => a - b),
+    median = sorted[31];
+  return values
+    .map((v, i) => (i === 0 ? "0" : v > median ? "1" : "0"))
+    .join("");
+}
+export function compareFrames(
+  a: Uint8Array,
+  b: Uint8Array,
+  w: number,
+  h: number,
+): FrameMetrics {
+  if (a.length !== w * h * 3 || b.length !== a.length)
+    throw Error("Кадры должны иметь одинаковый размер RGB24");
+  let sum = 0;
+  const heat = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < a.length; i += 3) {
+    const d =
+      (Math.abs(a[i] - b[i]) +
+        Math.abs(a[i + 1] - b[i + 1]) +
+        Math.abs(a[i + 2] - b[i + 2])) /
+      3;
+    sum += d * 3;
+    const j = (i / 3) * 4;
+    heat[j] = Math.min(255, d * 8);
+    heat[j + 1] = Math.min(255, d * 2);
+    heat[j + 2] = 0;
+    heat[j + 3] = 255;
+  }
+  let total = 0,
+    blocks = 0;
+  for (let y = 0; y < h; y += 8)
+    for (let x = 0; x < w; x += 8) {
+      let sa = 0,
+        sb = 0,
+        saa = 0,
+        sbb = 0,
+        sab = 0,
+        n = 0;
+      for (let yy = y; yy < Math.min(y + 8, h); yy++)
+        for (let xx = x; xx < Math.min(x + 8, w); xx++) {
+          const i = (yy * w + xx) * 3,
+            A = luma(a, i),
+            B = luma(b, i);
+          sa += A;
+          sb += B;
+          saa += A * A;
+          sbb += B * B;
+          sab += A * B;
+          n++;
+        }
+      const ma = sa / n,
+        mb = sb / n,
+        va = Math.max(0, saa / n - ma * ma),
+        vb = Math.max(0, sbb / n - mb * mb),
+        cov = sab / n - ma * mb;
+      total +=
+        ((2 * ma * mb + 6.5025) * (2 * cov + 58.5225)) /
+        ((ma * ma + mb * mb + 6.5025) * (va + vb + 58.5225));
+      blocks++;
+    }
+  const hashA = perceptualHash(a, w, h),
+    hashB = perceptualHash(b, w, h);
+  return {
+    mae: sum / a.length,
+    ssim: total / blocks,
+    hashDistance: [...hashA].filter((c, i) => c !== hashB[i]).length,
+    hashA,
+    hashB,
+    heat,
+  };
 }

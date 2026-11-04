@@ -1,5 +1,79 @@
 // Blank optional MP4 metadata in place. Atom sizes and media chunk offsets stay intact.
-export type Atom={type:string;offset:number;size:number;header:number};
-export function atoms(bytes:Uint8Array,start=0,end=bytes.length):Atom[]{const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);const out:Atom[]=[];for(let at=start;at<end;){if(end-at<8)throw Error('Повреждён заголовок MP4');let size=view.getUint32(at),header=8;if(size===1){if(end-at<16)throw Error('Повреждён MP4');const n=view.getBigUint64(at+8);if(n>BigInt(Number.MAX_SAFE_INTEGER))throw Error('MP4 слишком большой');size=Number(n);header=16;}else if(size===0)size=end-at;if(size<header||at+size>end)throw Error('Повреждена структура MP4');const type=String.fromCharCode(...bytes.subarray(at+4,at+8));out.push({type,offset:at,size,header});at+=size;}return out;}
-export function cleanMp4(bytes:Uint8Array){const removed:string[]=[];const containers=new Set(['moov','trak','mdia','minf','stbl','edts','dinf']);const walk=(start:number,end:number)=>{for(const a of atoms(bytes,start,end)){if(['udta','meta','uuid','free','skip'].includes(a.type)){bytes.set([102,114,101,101],a.offset+4);bytes.fill(0,a.offset+a.header,a.offset+a.size);removed.push(a.type);}else if(containers.has(a.type))walk(a.offset+a.header,a.offset+a.size);else if(a.type==='stsd'){for(const entry of atoms(bytes,a.offset+a.header+8,a.offset+a.size)){if(['avc1','avc3','hvc1','hev1','mp4v'].includes(entry.type)&&entry.size>=86){bytes.fill(0,entry.offset+50,entry.offset+82);removed.push('compressorName');}}}}};walk(0,bytes.length);return removed;}
-export function fastStart(bytes:Uint8Array){const all=atoms(bytes);const moov=all.find(a=>a.type==='moov'),mdat=all.find(a=>a.type==='mdat');return !!moov&&!!mdat&&moov.offset<mdat.offset;}
+export type Atom = {
+  type: string;
+  offset: number;
+  size: number;
+  header: number;
+};
+export function atoms(
+  bytes: Uint8Array,
+  start = 0,
+  end = bytes.length,
+): Atom[] {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const out: Atom[] = [];
+  for (let at = start; at < end; ) {
+    if (end - at < 8) throw Error("Повреждён заголовок MP4");
+    let size = view.getUint32(at),
+      header = 8;
+    if (size === 1) {
+      if (end - at < 16) throw Error("Повреждён MP4");
+      const n = view.getBigUint64(at + 8);
+      if (n > BigInt(Number.MAX_SAFE_INTEGER))
+        throw Error("MP4 слишком большой");
+      size = Number(n);
+      header = 16;
+    } else if (size === 0) size = end - at;
+    if (size < header || at + size > end)
+      throw Error("Повреждена структура MP4");
+    const type = String.fromCharCode(...bytes.subarray(at + 4, at + 8));
+    out.push({ type, offset: at, size, header });
+    at += size;
+  }
+  return out;
+}
+export function cleanMp4(bytes: Uint8Array) {
+  const removed: string[] = [];
+  const containers = new Set([
+    "moov",
+    "trak",
+    "mdia",
+    "minf",
+    "stbl",
+    "edts",
+    "dinf",
+  ]);
+  const walk = (start: number, end: number) => {
+    for (const a of atoms(bytes, start, end)) {
+      if (["udta", "meta", "uuid", "free", "skip"].includes(a.type)) {
+        bytes.set([102, 114, 101, 101], a.offset + 4);
+        bytes.fill(0, a.offset + a.header, a.offset + a.size);
+        removed.push(a.type);
+      } else if (containers.has(a.type))
+        walk(a.offset + a.header, a.offset + a.size);
+      else if (a.type === "stsd") {
+        for (const entry of atoms(
+          bytes,
+          a.offset + a.header + 8,
+          a.offset + a.size,
+        )) {
+          if (
+            ["avc1", "avc3", "hvc1", "hev1", "mp4v"].includes(entry.type) &&
+            entry.size >= 86
+          ) {
+            bytes.fill(0, entry.offset + 50, entry.offset + 82);
+            removed.push("compressorName");
+          }
+        }
+      }
+    }
+  };
+  walk(0, bytes.length);
+  return removed;
+}
+export function fastStart(bytes: Uint8Array) {
+  const all = atoms(bytes);
+  const moov = all.find((a) => a.type === "moov"),
+    mdat = all.find((a) => a.type === "mdat");
+  return !!moov && !!mdat && moov.offset < mdat.offset;
+}
