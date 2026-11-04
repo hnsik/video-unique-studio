@@ -4,6 +4,7 @@ export type Task = {
   id: string;
   sourceId: string;
   sourceName: string;
+  sourceDeleted?: boolean;
   variant: number;
   index: number;
   settings: Settings;
@@ -88,5 +89,33 @@ export async function listSources() {
         })),
       );
     tx.onerror = () => reject(Error("Не удалось восстановить исходники"));
+  });
+}
+
+// Remove the original and detach dependent jobs atomically; completed exports remain downloadable.
+export async function deleteReference(id: string): Promise<Task[]> {
+  const d = await db();
+  return new Promise((resolve, reject) => {
+    const tx = d.transaction(["files", "tasks"], "readwrite");
+    const store = tx.objectStore("tasks");
+    const changed: Task[] = [];
+    tx.objectStore("files").delete(id);
+    const all = store.getAll();
+    all.onsuccess = () => {
+      for (const task of all.result as Task[]) {
+        if (task.sourceId !== id) continue;
+        const next: Task = { ...task, sourceDeleted: true };
+        if (task.state !== "done") {
+          next.state = "cancelled";
+          next.error =
+            "Эталон удалён. Для новой обработки загрузите исходник заново и создайте новую задачу.";
+        }
+        store.put(next);
+        changed.push(next);
+      }
+    };
+    tx.oncomplete = () => resolve(changed);
+    tx.onabort = tx.onerror = () =>
+      reject(Error("Не удалось удалить эталон. Повторите попытку."));
   });
 }

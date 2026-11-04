@@ -782,3 +782,14 @@ fieldset:disabled {
     padding-bottom: 18px;
   }
 }
+
+.file:has(.delete-reference) {
+  flex-wrap: wrap;
+}
+.file:has(.delete-reference) .source-select {
+  flex-basis: 100%;
+}
+.delete-reference {
+  margin-left: auto;
+  color: #f4a6b1 !important;
+}

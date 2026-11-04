@@ -32,6 +32,7 @@ import {
   saveSource,
   getSource,
   deleteSource,
+  deleteReference,
   ensureSpace,
   listSources,
   type Task,
@@ -317,7 +318,9 @@ export default function Home() {
   }
   async function run() {
     if (runLock.current || !ready) return;
-    const queue = activeTasks.current.filter((t) => t.state === "queued");
+    const queue = activeTasks.current.filter(
+      (t) => t.state === "queued" && !t.sourceDeleted,
+    );
     if (!queue.length) {
       setNotice("Сначала создайте очередь.");
       return;
@@ -398,7 +401,33 @@ export default function Home() {
       setStage(0);
     }
   }
+  async function removeReference(source: Source) {
+    if (busy || runLock.current || planLock.current) return;
+    try {
+      const detached = await deleteReference(source.id);
+      const changes = new Map(detached.map((t) => [t.id, t]));
+      const remaining = sourceRef.current.filter((x) => x.id !== source.id);
+      sourceRef.current = remaining;
+      setSources(remaining);
+      setTasks((p) => p.map((t) => changes.get(t.id) || t));
+      URL.revokeObjectURL(source.url);
+      if (selected === source.id) setSelected(remaining[0]?.id || "");
+      if (scoped?.sourceId === source.id) setScope("");
+      setNotice("");
+      setStatus(
+        "Эталон удалён из хранилища браузера. Готовые результаты сохранены.",
+      );
+    } catch (error) {
+      setNotice(errorText(error));
+    }
+  }
   async function retry(t: Task) {
+    if (t.sourceDeleted) {
+      setNotice(
+        "Эталон удалён. Загрузите исходник заново и создайте новую задачу.",
+      );
+      return;
+    }
     try {
       await put({ ...t, state: "queued", error: undefined });
       setStatus("Задача снова в очереди. Нажмите «Запустить очередь».");
@@ -618,22 +647,20 @@ export default function Home() {
                   </span>
                 </button>
                 <button
-                  aria-label={"Убрать " + i.file.name}
-                  className="icon-btn"
+                  aria-label={"Удалить эталон " + i.file.name}
+                  title="Удалить исходное видео из хранилища браузера"
+                  className="btn small ghost delete-reference"
                   disabled={busy}
-                  onClick={async () => {
-                    URL.revokeObjectURL(i.url);
-                    setSources((p) => p.filter((x) => x.id !== i.id));
-                    if (!tasks.some((t) => t.sourceId === i.id))
-                      await deleteSource(i.id);
-                  }}
+                  onClick={() => void removeReference(i)}
                 >
-                  <Trash2 size={15} />
+                  <Trash2 size={15} /> Удалить эталон
                 </button>
               </div>
             ))}
           </div>
           <p className="small-help">
+            Исходное видео служит эталоном для сравнения. Кнопка «Удалить
+            эталон» удаляет его из хранилища; готовые результаты сохраняются.
             Очередь, исходники и результаты сохраняются в этом браузере.
             Закрытие вкладки прерывает текущую задачу; её можно повторить. Не
             очищайте данные сайта до скачивания.
@@ -788,6 +815,9 @@ export default function Home() {
                       {t.output ? " · " + size(t.output.size) : ""}
                     </span>
                     {t.error && <p className="task-error">{t.error}</p>}
+                    {t.sourceDeleted && t.state === "done" && (
+                      <small>Эталон удалён · готовый результат сохранён</small>
+                    )}
                     {t.report?.analysis && (
                       <small>
                         MAE {t.report.analysis.mae.toFixed(2)}/255 · SSIM{" "}
@@ -817,7 +847,12 @@ export default function Home() {
                     {["error", "cancelled"].includes(t.state) && (
                       <button
                         className="btn small"
-                        disabled={busy}
+                        disabled={busy || t.sourceDeleted}
+                        title={
+                          t.sourceDeleted
+                            ? "Загрузите эталон заново и создайте новую задачу"
+                            : undefined
+                        }
                         onClick={() => void retry(t)}
                       >
                         Повторить
@@ -826,7 +861,7 @@ export default function Home() {
                     {t.state !== "done" && (
                       <button
                         className="btn small ghost"
-                        disabled={busy}
+                        disabled={busy || t.sourceDeleted}
                         onClick={() => setScope(t.id)}
                       >
                         Настроить
