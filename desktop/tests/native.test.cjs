@@ -121,6 +121,8 @@ test("finds existing compatible FFmpeg pair, supports chunked IO, native executi
       "input",
       "-vf",
       "fps=30,trim=end_frame=15",
+      "-vsync",
+      "0",
       "-c:v",
       "libx264",
       "-pix_fmt",

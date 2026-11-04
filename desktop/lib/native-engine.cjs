@@ -29,6 +29,7 @@ const valueOptions = new Set([
   "-metadata:s:v",
   "-movflags",
   "-vsync",
+  "-fps_mode",
   "-frames:v",
   "-f",
   "-v",
@@ -239,6 +240,15 @@ class NativeEngine {
     const job = this.job(id, owner);
     if (job.child) throw Error("Команда уже выполняется");
     validateArgs(kind, args);
+    // The browser core uses legacy -vsync 0; native FFmpeg 9 removed it.
+    // fps_mode passthrough has the same frame-preserving behavior (FFmpeg 5+).
+    args = args.flatMap((arg, index) => {
+      if (arg === "-vsync") {
+        if (args[index + 1] !== "0") throw Error("Недопустимый режим кадров");
+        return ["-fps_mode", "passthrough"];
+      }
+      return args[index - 1] === "-vsync" ? [] : [arg];
+    });
     if (!Number.isFinite(timeout) || timeout < 1000 || timeout > 1800000)
       throw Error("Некорректное ограничение времени");
     let stderr = "",
