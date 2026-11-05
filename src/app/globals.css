@@ -802,3 +802,39 @@ fieldset:disabled {
 .desktop-runtime .privacy {
   margin: 0;
 }
+
+.settings-intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.mode-badge {
+  font-size: 12px;
+  color: #c6d7ff;
+  border: 1px solid #557ac0;
+  background: #203252;
+  padding: 5px 9px;
+  border-radius: 20px;
+}
+.btn.selected-preset {
+  background: #304f91;
+  color: white;
+  border: 2px solid #9bbdff;
+  box-shadow: 0 0 0 2px #6e98ff33;
+}
+.auto-button {
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 8px;
+}
+.advanced-settings {
+  border-top: 1px solid #30405c;
+  margin-top: 20px;
+  padding-top: 8px;
+}
+.settings-scroll h3 {
+  margin-top: 24px;
+}

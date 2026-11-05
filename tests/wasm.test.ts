@@ -122,6 +122,29 @@ test("actual pinned FFmpeg WASM core: probe, video/audio encode, aligned RGB ext
       },
       t = timeline(s, 1, 4);
     run(buildArgs("input", "out.mp4", s, 96, 64, true, t, p));
+    core.FS.writeFile("voice", new Uint8Array(await readFile(input)));
+    const editSettings = {
+      ...defaults,
+      segments: "0.5 1\n0 0.5",
+      zoomKeys: "0 1\n0.5 1.1\n0.9 1",
+      voiceId: "test",
+      voiceStart: 0.1,
+    };
+    run(
+      buildArgs(
+        "input",
+        "edited.mp4",
+        editSettings,
+        96,
+        64,
+        true,
+        timeline(editSettings, 1, 0),
+        p,
+      ),
+    );
+    const edited = probe("edited.mp4");
+    assert.equal(Number(edited.streams[0].nb_read_frames), 30);
+    assert(Math.abs(Number(edited.streams[1].duration) - 1) < 0.04);
     const cleaned = new Uint8Array(core.FS.readFile("out.mp4"));
     cleanMp4(cleaned);
     assert(fastStart(cleaned));

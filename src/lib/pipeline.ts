@@ -1,3 +1,10 @@
+import {
+  editedDuration,
+  originalTime,
+  montageGraph,
+  parseZoom,
+} from "./editing";
+import { selectAutoSettings, type AutoDecision } from "./auto-analysis";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { createDesktopEngine } from "./desktop-engine";
 import {
@@ -63,6 +70,7 @@ export type Report = {
     fastStart: boolean | null;
   };
   retriedForQuality: boolean;
+  autoDecision?: AutoDecision;
 };
 export type Observer = {
   stage: (s: string, progress: number) => void;
@@ -415,17 +423,23 @@ async function analyze(
     );
   const select = "select=" + indices.map((n) => `eq(n\\,${n})`).join("+");
   stage("Извлечение синхронизированных кадров", 80);
+  const edit = montageGraph(s.segments, false);
   await e.run([
     "-i",
     input,
-    "-vf",
-    [
-      `setpts=(PTS-STARTPTS)/${s.speed.toFixed(7)}`,
-      ...geometry(s, display.width, display.height),
-      `fps=${s.fps}`,
-      select,
-      `scale=${w}:${h}:flags=area`,
-    ].join(","),
+    "-filter_complex",
+    edit.graph +
+      `[${edit.video}]` +
+      [
+        `setpts=(PTS-STARTPTS)/${s.speed.toFixed(7)}`,
+        ...geometry(s, display.width, display.height),
+        `fps=${s.fps}`,
+        select,
+        `scale=${w}:${h}:flags=area`,
+      ].join(",") +
+      "[samples]",
+    "-map",
+    "[samples]",
     "-vsync",
     "0",
     "-frames:v",
@@ -471,7 +485,11 @@ async function analyze(
     );
     const { heat, ...values } = result;
     const time = indices[i] / s.fps;
-    samples.push({ time, sourceTime: time * s.speed, ...values });
+    samples.push({
+      time,
+      sourceTime: originalTime(s.segments, time * s.speed),
+      ...values,
+    });
     if (i === Math.floor(count / 2)) {
       const c = document.createElement("canvas");
       c.width = w;
@@ -500,6 +518,98 @@ async function analyze(
   };
 }
 
+async function autoFromInput(e: Engine, s: Settings, p: Probe) {
+  const v = videoStream(p),
+    duration = Number(v.duration || p.format.duration);
+  if (!Number.isFinite(duration) || duration <= 0)
+    throw Error("Не удалось определить длительность для анализа");
+  const d = displaySize(v),
+    w = 160,
+    h = Math.max(
+      32,
+      Math.min(640, Math.round((w * d.height) / d.width / 2) * 2),
+    );
+  const count = 5,
+    frames = Math.max(
+      1,
+      Number(v.nb_read_frames || v.nb_frames) ||
+        Math.round(duration * (ratio(v.avg_frame_rate) || 30)),
+    );
+  const indices = Array.from({ length: Math.min(count, frames) }, (_, i) =>
+    Math.floor((frames * (i + 1)) / (Math.min(count, frames) + 1)),
+  );
+  await e.run([
+    "-i",
+    "input",
+    "-vf",
+    `select=${indices.map((n) => `eq(n\\,${n})`).join("+")},scale=${w}:${h}:flags=area`,
+    "-vsync",
+    "0",
+    "-frames:v",
+    String(indices.length),
+    "-pix_fmt",
+    "rgb24",
+    "-f",
+    "rawvideo",
+    "-y",
+    "auto.rgb",
+  ]);
+  const rgb = await bytes(e.ff, "auto.rgb");
+  const sampleCount = Math.floor(rgb.length / (w * h * 3));
+  const result =
+    typeof Worker === "undefined"
+      ? selectAutoSettings(s, rgb)
+      : await new Promise<ReturnType<typeof selectAutoSettings>>(
+          (resolve, reject) => {
+            const worker = new Worker(
+              new URL("../workers/auto-analysis.ts", import.meta.url),
+            );
+            const finish = () => {
+              clearInterval(poll);
+              clearTimeout(timeout);
+              worker.terminate();
+            };
+            const poll = setInterval(() => {
+              if (e.cancelled()) {
+                finish();
+                reject(Error("Анализ отменён"));
+              }
+            }, 100);
+            const timeout = setTimeout(() => {
+              finish();
+              reject(Error("Превышено время автоматического анализа"));
+            }, 60000);
+            worker.onmessage = (event) => {
+              finish();
+              if (event.data.error) reject(Error(event.data.error));
+              else resolve(event.data.result);
+            };
+            worker.onerror = () => {
+              finish();
+              reject(Error("Не удалось выполнить анализ кадров"));
+            };
+            worker.postMessage({ settings: s, rgb }, [rgb.buffer]);
+          },
+        );
+  result.settings.autoSummary = `Анализ ${sampleCount} кадров: яркость ${result.settings.brightness.toFixed(4)}, контраст ${result.settings.contrast.toFixed(2)}, насыщенность ${result.settings.saturation.toFixed(2)}. Сравнено ${result.decision.candidates} сочетаний.`;
+  return result;
+}
+export async function analyzeAutoFile(e: Engine, file: File, s: Settings) {
+  try {
+    await e.ff.writeFile("input", new Uint8Array(await file.arrayBuffer()));
+    const p = await probeFile(e, "input", true);
+    const v = videoStream(p);
+    if (["smpte2084", "arib-std-b67"].includes(v.color_transfer || ""))
+      throw Error(
+        "Для автоматической коррекции сначала преобразуйте HDR в SDR",
+      );
+    return await autoFromInput(e, s, p);
+  } finally {
+    for (const path of ["input", "auto.rgb", "probe.json"])
+      await e.ff.deleteFile(path).catch(() => {});
+  }
+}
+
 const allTags = (p: Probe) =>
   Object.fromEntries([
     ...Object.entries(p.format.tags || {}).map(([k, v]) => ["format:" + k, v]),
@@ -513,9 +623,12 @@ export async function processVideo(
   s: Settings,
   index: number,
   observer: Observer,
+  narration?: File,
 ) {
   const paths = [
     "input",
+    "voice",
+    "auto.rgb",
     "encoded." + s.format,
     "final." + s.format,
     "probe.json",
@@ -540,7 +653,32 @@ export async function processVideo(
       );
     if (!v.width || !v.height || v.width * v.height > 3840 * 2160)
       throw Error("Поддерживается видео до 4K. Уменьшите исходное разрешение.");
-    const t = timeline(s, duration, index);
+    let autoDecision: AutoDecision | undefined;
+    if (s.autoAnalyze) {
+      observer.stage("Авто: анализ кадров и подбор цветокоррекции", 3);
+      const chosen = await autoFromInput(e, s, source);
+      s = chosen.settings;
+      autoDecision = chosen.decision;
+    }
+    const edited = editedDuration(s.segments, duration);
+    const t = timeline(s, edited, index);
+    if (parseZoom(s.zoomKeys).some((point) => point.time > t.duration))
+      throw Error("Точка зума выходит за длительность готового монтажа");
+    if (s.voiceId) {
+      if (!narration)
+        throw Error(
+          "Файл озвучки недоступен. Загрузите его заново в настройках звука.",
+        );
+      if (s.voiceStart >= t.duration)
+        throw Error("Начало озвучки находится за концом видео");
+      await e.ff.writeFile(
+        "voice",
+        new Uint8Array(await narration.arrayBuffer()),
+      );
+      const voiceProbe = await probeFile(e, "voice", false);
+      if (!voiceProbe.streams.some((x) => x.codec_type === "audio"))
+        throw Error("В файле озвучки нет аудиодорожки");
+    }
     const hasAudio = source.streams.some((x) => x.codec_type === "audio");
     let settings = s,
       analysis: Analysis | null = null,
@@ -605,7 +743,7 @@ export async function processVideo(
       )
         throw Error("Не совпадают разрешение или частота кадров");
       const audio = output.streams.find((x) => x.codec_type === "audio");
-      if (hasAudio && !s.mute && !audio)
+      if (((hasAudio && !s.mute) || s.voiceId) && !audio)
         throw Error("Аудиодорожка потеряна при кодировании");
       if (
         audio &&
@@ -701,13 +839,14 @@ export async function processVideo(
       warnings.push(
         "WebM выбран вручную; воспроизведение на iPhone зависит от версии iOS.",
       );
-    if (!hasAudio)
+    if (!hasAudio && !s.voiceId)
       warnings.push(
         "В исходном видео нет звука. Результат сохранён без аудио.",
       );
     const out = videoStream(output);
     const report: Report = {
-      version: "2.0",
+      version: "2.2",
+      autoDecision,
       sourceName: file.name,
       outputName,
       settings,

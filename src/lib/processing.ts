@@ -1,4 +1,19 @@
+import {
+  parseSegments,
+  parseZoom,
+  zoomExpression,
+  montageGraph,
+} from "./editing";
 export type Settings = {
+  selectedProfile: "manual" | "neutral" | "natural" | "vivid" | "auto";
+  autoAnalyze: boolean;
+  autoSummary: string;
+  segments: string;
+  zoomKeys: string;
+  voiceId: string;
+  voiceName: string;
+  voiceVolume: number;
+  voiceStart: number;
   speed: number;
   brightness: number;
   contrast: number;
@@ -46,6 +61,15 @@ export type Settings = {
   analysisSamples: number;
 };
 export const defaults: Settings = {
+  selectedProfile: "manual",
+  autoAnalyze: false,
+  autoSummary: "",
+  segments: "",
+  zoomKeys: "",
+  voiceId: "",
+  voiceName: "",
+  voiceVolume: 1,
+  voiceStart: 0,
   speed: 1,
   brightness: 0,
   contrast: 1,
@@ -100,6 +124,8 @@ export function validateSettings(value: unknown): Settings {
   const raw = value as Record<string, unknown>;
   const s = { ...defaults };
   const ranges: Record<string, [number, number]> = {
+    voiceVolume: [0, 2],
+    voiceStart: [0, 600],
     speed: [0.85, 1.25],
     brightness: [-0.15, 0.15],
     contrast: [0.85, 1.15],
@@ -128,6 +154,7 @@ export function validateSettings(value: unknown): Settings {
     analysisSamples: [3, 9],
   };
   const enums: Record<string, string[]> = {
+    selectedProfile: ["manual", "neutral", "natural", "vivid", "auto"],
     resolution: ["original", "720", "1080"],
     metadata: ["strip", "keep"],
     format: ["mp4", "webm"],
@@ -159,6 +186,8 @@ export function validateSettings(value: unknown): Settings {
     s.frameMin > s.frameMax
   )
     throw Error("Проверьте FPS, количество вариантов и границы диапазонов");
+  parseSegments(s.segments);
+  parseZoom(s.zoomKeys);
   return s;
 }
 export function generator(seed: number) {
@@ -340,6 +369,11 @@ export function geometry(s: Settings, w: number, h: number) {
     f.push(
       `crop=trunc(iw/${s.zoom.toFixed(6)}/2)*2:trunc(ih/${s.zoom.toFixed(6)}/2)*2:(iw-out_w)*${s.cropX / 100}:(ih-out_h)*${s.cropY / 100}`,
     );
+  if (s.zoomKeys.trim())
+    f.push(
+      `fps=${s.fps}`,
+      `zoompan=z='${zoomExpression(s.zoomKeys, s.fps)}':x='(iw-iw/zoom)*${s.cropX / 100}':y='(ih-ih/zoom)*${s.cropY / 100}':d=1:s=${d.width}x${d.height}:fps=${s.fps}`,
+    );
   if (s.flip) f.push("hflip");
   f.push(`scale=${d.width}:${d.height}:flags=lanczos`, "setsar=1");
   return f;
@@ -394,20 +428,49 @@ export function buildArgs(
   overlays: { path: string; start: number; end: number }[] = [],
 ) {
   const args = ["-i", input];
+  const voice = !!s.voiceId;
+  if (voice) args.push("-i", "voice");
   for (const o of overlays) args.push("-i", o.path);
-  if (overlays.length) {
-    let graph = `[0:v]${buildFilters(s, w, h, t)}[base0];`;
-    overlays.forEach((o, i) => {
-      graph += `[base${i}][${i + 1}:v]overlay=0:0:eof_action=repeat:enable='between(t,${o.start.toFixed(4)},${o.end.toFixed(4)})'[base${i + 1}];`;
-    });
+  const audioSource = hasAudio && !s.mute;
+  const hasOutputAudio = audioSource || voice;
+  const edit = montageGraph(s.segments, audioSource);
+  let graph = edit.graph + `[${edit.video}]${buildFilters(s, w, h, t)}[base0];`;
+  overlays.forEach((o, i) => {
+    graph += `[base${i}][${i + 1 + (voice ? 1 : 0)}:v]overlay=0:0:eof_action=repeat:enable='between(t,${o.start.toFixed(4)},${o.end.toFixed(4)})'[base${i + 1}];`;
+  });
+  const audioEnd = `apad,atrim=duration=${t.duration.toFixed(7)},asetpts=PTS-STARTPTS`;
+  if (audioSource) {
+    const filters = [
+      `atempo=${s.speed.toFixed(7)}`,
+      `volume=${s.volume.toFixed(5)}`,
+    ];
+    if (s.audioNormalize) filters.push("loudnorm=I=-16:TP=-1.5:LRA=11");
+    if (s.fadeAudio)
+      filters.push(
+        "afade=t=in:d=0.15",
+        `afade=t=out:st=${Math.max(0, t.duration - 0.2)}:d=0.2`,
+      );
+    graph += `[${edit.audio}]${filters.join(",")},${audioEnd}[originalaudio];`;
+  }
+  if (voice)
+    graph += `[1:a]asetpts=PTS-STARTPTS,volume=${s.voiceVolume},adelay=${Math.round(s.voiceStart * 1000)}:all=1,${audioEnd}[voiceaudio];`;
+  if (voice && audioSource)
+    graph += `[originalaudio][voiceaudio]amix=inputs=2:duration=longest:normalize=0,alimiter=limit=0.95:latency=1,${audioEnd}[mixedaudio];`;
+  args.push(
+    "-filter_complex",
+    graph.slice(0, -1),
+    "-map",
+    `[base${overlays.length}]`,
+  );
+  if (hasOutputAudio)
     args.push(
-      "-filter_complex",
-      graph.slice(0, -1),
       "-map",
-      `[base${overlays.length}]`,
+      voice
+        ? audioSource
+          ? "[mixedaudio]"
+          : "[voiceaudio]"
+        : "[originalaudio]",
     );
-  } else args.push("-vf", buildFilters(s, w, h, t), "-map", "0:v:0");
-  if (hasAudio && !s.mute) args.push("-map", "0:a:0");
   const enc = encoding(s, p);
   if (s.format === "mp4")
     args.push(
@@ -437,25 +500,8 @@ export function buildArgs(
       "-crf",
       "30",
     );
-  if (hasAudio && !s.mute) {
-    const af = [
-      `atempo=${s.speed.toFixed(7)}`,
-      `volume=${s.volume.toFixed(5)}`,
-    ];
-    if (s.audioNormalize) af.push("loudnorm=I=-16:TP=-1.5:LRA=11");
-    if (s.fadeAudio)
-      af.push(
-        "afade=t=in:d=0.15",
-        `afade=t=out:st=${Math.max(0, t.duration - 0.2)}:d=0.2`,
-      );
-    af.push(
-      "apad",
-      `atrim=duration=${t.duration.toFixed(7)}`,
-      "asetpts=PTS-STARTPTS",
-    );
+  if (hasOutputAudio) {
     args.push(
-      "-af",
-      af.join(","),
       "-c:a",
       s.format === "mp4" ? "aac" : "libopus",
       "-ar",

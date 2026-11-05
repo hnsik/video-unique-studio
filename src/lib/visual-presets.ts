@@ -38,6 +38,8 @@ export function applyVisualPreset(s: Settings, preset: VisualPreset): Settings {
   return {
     ...s,
     ...visualPresets[preset].values,
+    selectedProfile: preset,
+    autoAnalyze: false,
     auto: false,
     noise: 0,
     flip: false,
@@ -62,30 +64,22 @@ export function hasVisualEffects(s: Settings) {
   );
 }
 
-/** A bounded editing preset, not an optimizer for a platform's classifier. */
+/** Analysis is performed per source, before encoding. No random color changes. */
 export function applyAutoPreset(s: Settings): Settings {
-  const timedText = !!s.subtitles.trim();
   return {
-    ...applyVisualPreset(s, "vivid"),
-    auto: true,
-    strength: "medium",
-    speed: timedText ? s.speed : 1.03,
-    speedVariation: timedText ? 0 : 0.01,
-    brightness: 0.015,
-    contrast: 1.05,
-    saturation: 1.06,
-    zoom: 1.025,
+    ...s,
+    selectedProfile: "auto",
+    autoAnalyze: true,
+    auto: false,
+    brightness: 0,
+    contrast: 1,
+    saturation: 1,
     hue: 0,
-    colorVariation: 0.015,
-    zoomVariation: 0.01,
-    // Speed changes the timeline without adding a frozen tail or cutting the end.
-    durationVariation: false,
-    frameVariation: false,
+    noise: 0,
     analysis: true,
     analysisSamples: 9,
     qualityRetry: true,
     adaptive: true,
-    crf: 21,
     format: "mp4",
     metadata: "strip",
   };

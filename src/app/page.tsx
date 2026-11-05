@@ -25,7 +25,12 @@ import {
   parseSrt,
   type Settings,
 } from "@/lib/processing";
-import { createEngine, processVideo, type Engine } from "@/lib/pipeline";
+import {
+  createEngine,
+  processVideo,
+  analyzeAutoFile,
+  type Engine,
+} from "@/lib/pipeline";
 import {
   visualPresets,
   applyVisualPreset,
@@ -159,6 +164,7 @@ export default function Home() {
     [ready, setReady] = useState(false),
     [running, setRunning] = useState(false),
     [zipBusy, setZipBusy] = useState(false),
+    [autoBusy, setAutoBusy] = useState(false),
     [status, setStatus] = useState("Загрузите видео и создайте очередь"),
     [stage, setStage] = useState(0),
     [notice, setNotice] = useState(""),
@@ -171,6 +177,7 @@ export default function Home() {
     [shareFile, setShareFile] = useState<File | null>(null);
   const input = useRef<HTMLInputElement>(null),
     engine = useRef<Engine | null>(null),
+    autoEngine = useRef<Engine | null>(null),
     cancel = useRef(false),
     activeTasks = useRef<Task[]>([]),
     sourceRef = useRef<Source[]>([]),
@@ -232,6 +239,7 @@ export default function Home() {
       live = false;
       cancel.current = true;
       engine.current?.destroy();
+      autoEngine.current?.destroy();
       sourceRef.current.forEach((x) => URL.revokeObjectURL(x.url));
       if (previewRef.current) URL.revokeObjectURL(previewRef.current);
     };
@@ -252,8 +260,8 @@ export default function Home() {
     return () => window.removeEventListener("beforeunload", warn);
   }, [running, zipBusy]);
   const scoped = tasks.find((t) => t.id === scope),
-    cfg = scoped?.settings || s,
-    busy = running || zipBusy;
+    cfg = { ...defaults, ...(scoped?.settings || s) },
+    busy = running || zipBusy || autoBusy;
   async function update(next: Settings) {
     if (scope && scoped) {
       const changed = {
@@ -271,7 +279,71 @@ export default function Home() {
     } else setS(next);
   }
   const change = <K extends keyof Settings>(key: K, value: Settings[K]) =>
-    void update({ ...cfg, [key]: value });
+    void update({
+      ...cfg,
+      [key]: value,
+      selectedProfile: "manual",
+      autoAnalyze: false,
+      autoSummary: "",
+    });
+  async function chooseAuto() {
+    if (busy || planLock.current) return;
+    const source = sourceRef.current.find(
+      (x) => x.id === (scoped?.sourceId || selected),
+    );
+    const next = applyAutoPreset(cfg);
+    if (!source) {
+      await update(next);
+      setNotice(
+        "Авто выбрано. Анализ каждого исходника будет выполнен перед кодированием.",
+      );
+      return;
+    }
+    setAutoBusy(true);
+    cancel.current = false;
+    setNotice("");
+    try {
+      const observer = {
+        stage: (name: string, p: number) => {
+          setStatus(name);
+          setStage(p);
+        },
+        progress: (p: number) => setStage(Math.round(p * 100)),
+      };
+      autoEngine.current = await createEngine(observer, () => cancel.current);
+      setStatus("Авто: анализ исходника и сравнение 45 сочетаний цвета");
+      const result = await analyzeAutoFile(
+        autoEngine.current,
+        source.file,
+        next,
+      );
+      if (cancel.current) throw Error("Анализ отменён");
+      await update(result.settings);
+      setNotice(
+        `${source.file.name}: ${result.settings.autoSummary} Настройки можно изменить вручную.`,
+      );
+      setStatus("Автоматические настройки готовы");
+    } catch (error) {
+      setNotice(errorText(error));
+    } finally {
+      autoEngine.current?.destroy();
+      autoEngine.current = null;
+      setAutoBusy(false);
+    }
+  }
+  async function uploadVoice(file: File) {
+    if (busy) return;
+    try {
+      if (!file.size || file.size > 50 * 1048576)
+        throw Error("Озвучка должна быть от 1 байта до 50 МБ");
+      await ensureSpace(file.size);
+      const id = "voice-" + crypto.randomUUID();
+      await saveSource(id, file);
+      await update({ ...cfg, voiceId: id, voiceName: file.name });
+    } catch (error) {
+      setNotice(errorText(error));
+    }
+  }
   async function autoQueue() {
     if (busy || planLock.current) return;
     planLock.current = true;
@@ -352,7 +424,7 @@ export default function Home() {
     }
   }
   async function run() {
-    if (runLock.current || planLock.current || !ready) return;
+    if (runLock.current || planLock.current || autoBusy || !ready) return;
     const queue = activeTasks.current.filter(
       (t) => t.state === "queued" && !t.sourceDeleted,
     );
@@ -396,6 +468,9 @@ export default function Home() {
             validateSettings(job.settings),
             job.index,
             observer,
+            job.settings.voiceId
+              ? await getSource(job.settings.voiceId)
+              : undefined,
           );
           if (cancel.current) throw Error("Обработка отменена");
           job = {
@@ -917,6 +992,33 @@ export default function Home() {
               ))}
             </div>
           </div>
+          {report?.autoDecision && (
+            <section className="panel analysis">
+              <div className="analysis-body">
+                <h3>Что выбрал автоматический анализ</h3>
+                <p>{report.settings.autoSummary}</p>
+                <p>
+                  Средняя яркость исходных кадров:{" "}
+                  {(report.autoDecision.before.mean * 255).toFixed(1)}/255. Доля
+                  светов у верхнего предела:{" "}
+                  {(report.autoDecision.before.clippedLight * 100).toFixed(2)}%.
+                  Глубоких теней:{" "}
+                  {(report.autoDecision.before.clippedDark * 100).toFixed(2)}%.
+                </p>
+                {report.autoDecision.reasons.map((reason) => (
+                  <p key={reason} className="small-help">
+                    {reason}
+                  </p>
+                ))}
+                {report.retriedForQuality && (
+                  <p>
+                    После проверки результата интенсивность дополнительно
+                    снижена. Итоговые параметры сохранены в JSON-отчёте.
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
           {report && (
             <section className="panel analysis">
               <div className="panel-heading">
@@ -1119,35 +1221,50 @@ export default function Home() {
               </button>
             ))}
           </div>
+          {autoBusy && (
+            <button
+              className="btn"
+              onClick={() => {
+                cancel.current = true;
+                autoEngine.current?.destroy();
+              }}
+            >
+              Отменить анализ
+            </button>
+          )}
           <fieldset className="settings-scroll" disabled={busy}>
             {tab === "video" && (
               <>
-                <h3>Автоматическая настройка</h3>
+                <div className="settings-intro">
+                  <h3>1. Режим обработки</h3>
+                  <span className="mode-badge">
+                    {cfg.selectedProfile === "auto"
+                      ? "✓ Авто по анализу"
+                      : cfg.selectedProfile === "manual"
+                        ? "Ручные настройки"
+                        : "✓ " + visualPresets[cfg.selectedProfile].label}
+                  </span>
+                </div>
                 <button
                   type="button"
-                  className="btn"
-                  onClick={() => {
-                    const next = applyAutoPreset(cfg);
-                    void update(
-                      scoped
-                        ? { ...randomFor(next, scoped.index), auto: false }
-                        : next,
-                    );
-                  }}
+                  className={`btn auto-button ${cfg.selectedProfile === "auto" ? "selected-preset" : ""}`}
+                  aria-pressed={cfg.selectedProfile === "auto"}
+                  onClick={() => void chooseAuto()}
                 >
-                  Авто — сбалансированная обработка
+                  {cfg.selectedProfile === "auto" ? "✓ " : ""}Авто — анализ
+                  видео
                 </button>
-                <p className="notice">
-                  Цвет, приближение 2,5–3,5%, скорость 1,02–1,04×, MP4, очистка
-                  метаданных и анализ 9 пар кадров. Длительность меняется за
-                  счёт скорости, без добавления стоп-кадра. При наличии
-                  субтитров выбранная скорость сохраняется. При низком SSIM
-                  повторная обработка смягчает эффекты. Это готовый профиль, а
-                  не поиск максимального отличия или гарантия оригинальности.
+                <p className="small-help">
+                  Анализирует реальные кадры и сравнивает 45 сочетаний цвета.
+                  Ограничивает пересвет и потерю деталей в тенях. Скорость,
+                  фрагменты, зум и текст остаются вашим выбором. Каждый исходник
+                  повторно анализируется перед экспортом. Ручная правка
+                  выключает автоматический подбор.
                   {scoped
-                    ? " Применяется к выбранному варианту."
-                    : " Применяется к новым задачам; для готовой очереди используйте кнопку ниже."}
+                    ? " Изменяется выбранный вариант."
+                    : " Для существующей очереди нажмите кнопку ниже."}
                 </p>
+                {cfg.autoSummary && <p className="notice">{cfg.autoSummary}</p>}
                 {!scoped && (
                   <button
                     type="button"
@@ -1168,9 +1285,11 @@ export default function Home() {
                     <button
                       key={key}
                       type="button"
-                      className="btn small"
+                      className={`btn small ${cfg.selectedProfile === key ? "selected-preset" : ""}`}
+                      aria-pressed={cfg.selectedProfile === key}
                       onClick={() => void update(applyVisualPreset(cfg, key))}
                     >
+                      {cfg.selectedProfile === key ? "✓ " : ""}
                       {visualPresets[key].label}
                     </button>
                   ))}
@@ -1194,7 +1313,7 @@ export default function Home() {
                     редактировании выбранного варианта.
                   </p>
                 </details>
-                <h3>Временная шкала</h3>
+                <h3>Скорость воспроизведения</h3>
                 <Range
                   label="Скорость"
                   value={cfg.speed}
@@ -1202,59 +1321,22 @@ export default function Home() {
                   max={1.25}
                   onChange={(v) => change("speed", v)}
                 />
-                <label className="switch">
-                  <span>Вариация длительности ±0,2–0,9 с</span>
-                  <input
-                    type="checkbox"
-                    checked={cfg.durationVariation}
-                    onChange={(e) =>
-                      change("durationVariation", e.target.checked)
-                    }
+                <h3>2. Монтаж фрагментов</h3>
+                <label className="field">
+                  Начало и конец в секундах — одна пара в строке
+                  <textarea
+                    rows={3}
+                    value={cfg.segments}
+                    placeholder={"0 5\n10 18"}
+                    onChange={(e) => change("segments", e.target.value)}
                   />
                 </label>
-                <label className="switch">
-                  <span>Вариация количества кадров</span>
-                  <input
-                    type="checkbox"
-                    checked={cfg.frameVariation}
-                    onChange={(e) => change("frameVariation", e.target.checked)}
-                  />
-                </label>
-                {cfg.frameVariation && (
-                  <div className="fields-pair">
-                    <label className="field">
-                      Минимум кадров
-                      <input
-                        type="number"
-                        min={6}
-                        max={27}
-                        value={cfg.frameMin}
-                        onChange={(e) =>
-                          change("frameMin", Number(e.target.value))
-                        }
-                      />
-                    </label>
-                    <label className="field">
-                      Максимум кадров
-                      <input
-                        type="number"
-                        min={6}
-                        max={27}
-                        value={cfg.frameMax}
-                        onChange={(e) =>
-                          change("frameMax", Number(e.target.value))
-                        }
-                      />
-                    </label>
-                  </div>
-                )}
                 <p className="small-help">
-                  Один согласованный сдвиг временной шкалы. При удлинении
-                  добавляется неподвижный хвост и тишина; при сокращении
-                  обрезается конец. Итоговое количество кадров проверяется
-                  декодированием.
+                  Пусто — весь ролик. Фрагменты склеиваются в указанном порядке
+                  вместе со звуком. Можно менять порядок строк. Субтитры и
+                  озвучка задаются по времени готового монтажа.
                 </p>
-                <h3>Smart Crop</h3>
+                <h3>3. Кадрирование и движение</h3>
                 <Range
                   label="Масштаб"
                   value={cfg.zoom}
@@ -1291,7 +1373,21 @@ export default function Home() {
                     onChange={(e) => change("flip", e.target.checked)}
                   />
                 </label>
-                <h3>Pixel Variation и цвет</h3>
+                <label className="field">
+                  Ключевые точки зума: секунда и масштаб
+                  <textarea
+                    rows={3}
+                    value={cfg.zoomKeys}
+                    placeholder={"0 1\n3 1.08\n6 1"}
+                    onChange={(e) => change("zoomKeys", e.target.value)}
+                  />
+                </label>
+                <p className="small-help">
+                  Плавный переход между точками, масштаб 1–1,5. Время
+                  отсчитывается в готовом монтаже. Зум добавляется к постоянному
+                  масштабу выше.
+                </p>
+                <h3>4. Цвет и детали</h3>
                 <Range
                   label="Яркость"
                   value={cfg.brightness}
@@ -1338,7 +1434,66 @@ export default function Home() {
                     onChange={(e) => change("vignette", e.target.checked)}
                   />
                 </label>
-                <h3>Новые варианты</h3>
+                <details className="advanced-settings">
+                  <summary>
+                    Дополнительно: изменение конца и количества кадров
+                  </summary>{" "}
+                  <label className="switch">
+                    <span>Вариация длительности ±0,2–0,9 с</span>
+                    <input
+                      type="checkbox"
+                      checked={cfg.durationVariation}
+                      onChange={(e) =>
+                        change("durationVariation", e.target.checked)
+                      }
+                    />
+                  </label>
+                  <label className="switch">
+                    <span>Вариация количества кадров</span>
+                    <input
+                      type="checkbox"
+                      checked={cfg.frameVariation}
+                      onChange={(e) =>
+                        change("frameVariation", e.target.checked)
+                      }
+                    />
+                  </label>
+                  {cfg.frameVariation && (
+                    <div className="fields-pair">
+                      <label className="field">
+                        Минимум кадров
+                        <input
+                          type="number"
+                          min={6}
+                          max={27}
+                          value={cfg.frameMin}
+                          onChange={(e) =>
+                            change("frameMin", Number(e.target.value))
+                          }
+                        />
+                      </label>
+                      <label className="field">
+                        Максимум кадров
+                        <input
+                          type="number"
+                          min={6}
+                          max={27}
+                          value={cfg.frameMax}
+                          onChange={(e) =>
+                            change("frameMax", Number(e.target.value))
+                          }
+                        />
+                      </label>
+                    </div>
+                  )}
+                  <p className="small-help">
+                    Один согласованный сдвиг временной шкалы. При удлинении
+                    добавляется неподвижный хвост и тишина; при сокращении
+                    обрезается конец. Итоговое количество кадров проверяется
+                    декодированием.
+                  </p>
+                </details>
+                <h3>Пакетная обработка</h3>
                 <label className="field">
                   Вариантов на исходник (1–50)
                   <input
@@ -1393,9 +1548,61 @@ export default function Home() {
             )}
             {tab === "audio" && (
               <>
-                <h3>Обработка звука</h3>
+                <h3>Собственная озвучка</h3>
+                <label className="field">
+                  Аудиофайл (MP3, M4A, WAV, AAC, OGG)
+                  <input
+                    type="file"
+                    accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void uploadVoice(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {cfg.voiceId && (
+                  <div className="notice">
+                    {cfg.voiceName}
+                    <button
+                      className="btn small"
+                      onClick={() =>
+                        void update({ ...cfg, voiceId: "", voiceName: "" })
+                      }
+                    >
+                      Убрать озвучку из варианта
+                    </button>
+                  </div>
+                )}
+                <Range
+                  label="Громкость озвучки"
+                  value={cfg.voiceVolume}
+                  min={0}
+                  max={2}
+                  step={0.05}
+                  onChange={(v) => change("voiceVolume", v)}
+                />
+                <label className="field">
+                  Начало озвучки, секунды
+                  <input
+                    type="number"
+                    min={0}
+                    max={600}
+                    step={0.1}
+                    value={cfg.voiceStart}
+                    onChange={(e) =>
+                      change("voiceStart", Number(e.target.value))
+                    }
+                  />
+                </label>
+                <p className="small-help">
+                  Озвучка накладывается на готовый монтаж. Длинная дорожка
+                  обрезается по концу ролика, короткая дополняется тишиной.
+                  Переключатель ниже выключает только исходный звук.
+                </p>
+                <h3>Исходный звук</h3>
                 <label className="switch">
-                  <span>Без звука</span>
+                  <span>Выключить исходный звук</span>
                   <input
                     type="checkbox"
                     checked={cfg.mute}
@@ -1697,7 +1904,7 @@ export default function Home() {
         </aside>
       </section>
       <footer>
-        Video Unique Studio Advanced 2.0 · Не закрывайте вкладку во время
+        Video Unique Studio Advanced 2.2 · Не закрывайте вкладку во время
         обработки · Результаты проверяются перед скачиванием
       </footer>
     </main>

@@ -44,6 +44,13 @@ const flags = new Set([
   "-show_streams",
 ]);
 const filters = new Set([
+  "split",
+  "asplit",
+  "concat",
+  "zoompan",
+  "adelay",
+  "amix",
+  "alimiter",
   "setpts",
   "crop",
   "hflip",

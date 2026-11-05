@@ -409,7 +409,7 @@ test("queue plans 50 independent variants, enforces total cap, and does not reus
   assert.equal(next[0].settings.resolution, "720");
 });
 
-test("auto profile keeps user content and creates bounded edits without a frozen tail", () => {
+test("auto profile preserves editing decisions and requests per-source analysis", () => {
   const input = {
     ...defaults,
     overlay: "My caption",
@@ -421,8 +421,9 @@ test("auto profile keeps user content and creates bounded edits without a frozen
   assert.equal(input.speed, 1);
   for (let i = 0; i < 50; i++) {
     const s = validateSettings(randomFor(preset, i));
-    assert(s.speed >= 1.02 && s.speed <= 1.04);
-    assert(s.zoom >= 1.025 && s.zoom <= 1.035);
+    assert.equal(s.speed, input.speed);
+    assert.equal(s.autoAnalyze, true);
+    assert.equal(s.zoom, input.zoom);
     assert.equal(s.overlay, input.overlay);
     assert.equal(s.mute, true);
     assert.equal(s.volume, 0.7);
@@ -430,7 +431,7 @@ test("auto profile keeps user content and creates bounded edits without a frozen
     assert.equal(s.analysisSamples, 9);
     const t = timeline(s, 60, i);
     assert.equal(t.deltaFrames, 0);
-    assert(t.duration < 60);
+    assert.equal(t.duration, 60);
   }
   const captions = {
     ...input,

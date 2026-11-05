@@ -83,10 +83,12 @@ export async function listSources() {
       files = store.getAll();
     tx.oncomplete = () =>
       resolve(
-        files.result.map((file: File, i: number) => ({
-          id: String(keys.result[i]),
-          file,
-        })),
+        files.result
+          .map((file: File, i: number) => ({
+            id: String(keys.result[i]),
+            file,
+          }))
+          .filter((item) => !item.id.startsWith("voice-")),
       );
     tx.onerror = () => reject(Error("Не удалось восстановить исходники"));
   });

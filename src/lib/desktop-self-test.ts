@@ -12,6 +12,27 @@ import type { DesktopBridge } from "./desktop-engine";
 export async function desktopSelfTest(bridge: DesktopBridge) {
   let engine: Awaited<ReturnType<typeof createEngine>> | undefined;
   try {
+    const until = async (check: () => boolean) => {
+      const deadline = Date.now() + 10000;
+      while (!check()) {
+        if (Date.now() > deadline) throw Error("UI state check timed out");
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+    };
+    await until(() => !!document.querySelector("button.auto-button"));
+    const autoButton =
+      document.querySelector<HTMLButtonElement>("button.auto-button")!;
+    autoButton.click();
+    await until(() => autoButton.getAttribute("aria-pressed") === "true");
+    const natural = Array.from(
+      document.querySelectorAll<HTMLButtonElement>("button"),
+    ).find((button) => button.textContent?.includes("Мягкая обработка"))!;
+    natural.click();
+    await until(
+      () =>
+        natural.getAttribute("aria-pressed") === "true" &&
+        autoButton.getAttribute("aria-pressed") === "false",
+    );
     const fixture = await bridge.selfTestFixture();
     const file = new File([new Uint8Array(fixture)], "desktop-check.mp4", {
       type: "video/mp4",
@@ -23,6 +44,8 @@ export async function desktopSelfTest(bridge: DesktopBridge) {
     const settings = applyAutoPreset({
       ...defaults,
       speed: 1.05,
+      segments: "0.5 1.5\n0 0.5",
+      zoomKeys: "0 1\n0.7 1.08\n1.2 1",
       durationVariation: true,
       frameVariation: true,
       overlay: "Windows FFmpeg",
@@ -41,7 +64,8 @@ export async function desktopSelfTest(bridge: DesktopBridge) {
       !report.checks.decoded ||
       !report.checks.browserPlayback ||
       !report.analysis ||
-      report.settings.brightness !== 0.015 ||
+      !report.autoDecision ||
+      report.autoDecision.candidates !== 45 ||
       Math.abs(Number(a.duration) - report.timeline.duration) > 0.04 ||
       Number(v.nb_read_frames) !== report.timeline.frames
     )
@@ -75,7 +99,9 @@ export async function desktopSelfTest(bridge: DesktopBridge) {
     await bridge.selfTestFinish({
       ok: true,
       nativeFFmpeg: true,
-      visualPreset: "auto",
+      visualPreset: "auto-analysis",
+      selectedButtonUI: true,
+      montageAndZoom: true,
       frames: report.checks.frames,
       videoDuration: Number(v.duration),
       audioDuration: Number(a.duration),
