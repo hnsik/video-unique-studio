@@ -6,6 +6,15 @@ export type FrameMetrics = {
   hashB: string;
   heat: Uint8ClampedArray;
 };
+export function similarityNotice(metrics: {
+  mae: number;
+  ssim: number;
+  hashDistance: number;
+}) {
+  if (metrics.mae < 2 && metrics.ssim > 0.97 && metrics.hashDistance <= 2)
+    return "В проверенных кадрах мало различий цвета и деталей (с учётом обрезки, отражения и скорости): MAE < 2, SSIM > 0.97, средняя дистанция pHash ≤ 2. Изменение SHA-256 не означает заметного изменения изображения. Это описание измерений, а не прогноз решения соцсети.";
+  return null;
+}
 const luma = (p: Uint8Array, i: number) =>
   0.2126 * p[i] + 0.7152 * p[i + 1] + 0.0722 * p[i + 2];
 export function perceptualHash(rgb: Uint8Array, w: number, h: number) {

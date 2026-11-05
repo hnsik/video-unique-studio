@@ -26,6 +26,12 @@ import {
 } from "@/lib/processing";
 import { createEngine, processVideo, type Engine } from "@/lib/pipeline";
 import {
+  visualPresets,
+  applyVisualPreset,
+  hasVisualEffects,
+  type VisualPreset,
+} from "@/lib/visual-presets";
+import {
   saveTask,
   listTasks,
   deleteTask,
@@ -1088,6 +1094,38 @@ export default function Home() {
           <fieldset className="settings-scroll" disabled={busy}>
             {tab === "video" && (
               <>
+                <h3>Профиль изображения</h3>
+                <div className="actions" aria-label="Профили изображения">
+                  {(Object.keys(visualPresets) as VisualPreset[]).map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className="btn small"
+                      onClick={() => void update(applyVisualPreset(cfg, key))}
+                    >
+                      {visualPresets[key].label}
+                    </button>
+                  ))}
+                </div>
+                <p className="notice">
+                  {hasVisualEffects(cfg)
+                    ? "Визуальная обработка включена. Точные параметры указаны ниже; изменения можно настроить вручную. Профили не гарантируют оригинальность или попадание в рекомендации."
+                    : "Визуальные эффекты выключены: изображение в основном сохранится при перекодировании. Для коррекции выберите профиль или измените параметры ниже."}
+                </p>
+                <details>
+                  <summary>Что меняют профили</summary>
+                  {Object.values(visualPresets).map((preset) => (
+                    <p key={preset.label}>
+                      <b>{preset.label}:</b> {preset.description}
+                    </p>
+                  ))}
+                  <p>
+                    Профиль задаёт цвет и кадрирование и выключает случайные
+                    эффекты. Скорость, звук, текст и формат сохраняют выбранные
+                    настройки. Существующие задачи меняются только при
+                    редактировании выбранного варианта.
+                  </p>
+                </details>
                 <h3>Временная шкала</h3>
                 <Range
                   label="Скорость"

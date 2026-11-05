@@ -17,7 +17,8 @@ import {
   type Probe,
 } from "../src/lib/processing";
 import { cleanMp4, fastStart, atoms } from "../src/lib/mp4";
-import { compareFrames } from "../src/lib/metrics";
+import { compareFrames, similarityNotice } from "../src/lib/metrics";
+import { applyVisualPreset, hasVisualEffects } from "../src/lib/visual-presets";
 import { createZip, csv } from "../src/lib/export";
 const exec = promisify(execFile);
 async function probe(file: string): Promise<Probe> {
@@ -85,6 +86,15 @@ test("real RGB metrics: exact MAE and identity; local SSIM and perceptual hash r
   assert.equal(same.mae, 0);
   assert.equal(same.ssim, 1);
   assert.equal(same.hashDistance, 0);
+  assert(similarityNotice(same));
+  assert.equal(hasVisualEffects(defaults), false);
+  const preset = applyVisualPreset(
+    { ...defaults, mute: true, overlay: "Мой текст" },
+    "vivid",
+  );
+  assert(hasVisualEffects(preset));
+  assert.equal(preset.mute, true);
+  assert.equal(preset.overlay, "Мой текст");
   const changed = compareFrames(a, b, 32, 32);
   assert.equal(changed.mae, 7);
   assert(changed.ssim < 1 && changed.ssim > 0.9);
@@ -196,6 +206,8 @@ test("native video exports: timeline frames, AAC sync, crop/color/audio/text fil
         fadeAudio: true,
       },
       { ...defaults, mute: true },
+      applyVisualPreset(defaults, "natural"),
+      applyVisualPreset(defaults, "vivid"),
     ];
     for (let i = 0; i < cases.length; i++) {
       const s = cases[i],
@@ -261,6 +273,61 @@ test("native video exports: timeline frames, AAC sync, crop/color/audio/text fil
         "-",
       ]);
     }
+    const rgb = async (file: string) =>
+      new Uint8Array(
+        (
+          await exec(
+            "ffmpeg",
+            [
+              "-v",
+              "error",
+              "-ss",
+              "0.5",
+              "-i",
+              file,
+              "-frames:v",
+              "1",
+              "-threads",
+              "1",
+              "-pix_fmt",
+              "rgb24",
+              "-f",
+              "rawvideo",
+              "pipe:1",
+            ],
+            { encoding: "buffer", maxBuffer: 1024 * 1024 },
+          )
+        ).stdout,
+      );
+    const reference = await rgb(input);
+    const neutral = compareFrames(
+      reference,
+      await rgb(path.join(dir, "out0.mp4")),
+      160,
+      96,
+    );
+    const natural = compareFrames(
+      reference,
+      await rgb(path.join(dir, "out5.mp4")),
+      160,
+      96,
+    );
+    const vivid = compareFrames(
+      reference,
+      await rgb(path.join(dir, "out6.mp4")),
+      160,
+      96,
+    );
+    assert(
+      natural.mae > neutral.mae + 1,
+      "natural profile must change decoded pixels",
+    );
+    assert(
+      vivid.mae > natural.mae,
+      "vivid profile must apply its stronger crop/color settings",
+    );
+    assert(vivid.ssim < neutral.ssim);
+    assert.equal(similarityNotice(vivid), null);
     const silent = path.join(dir, "silent.mp4");
     await exec("ffmpeg", [
       "-v",

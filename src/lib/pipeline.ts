@@ -16,6 +16,7 @@ import {
 } from "./processing";
 import { cleanMp4, fastStart } from "./mp4";
 import type { FrameMetrics } from "./metrics";
+import { similarityNotice } from "./metrics";
 export type Sample = {
   time: number;
   sourceTime: number;
@@ -690,6 +691,8 @@ export async function processVideo(
         );
     }
     const warnings = [...metadataWarnings];
+    const similarity = analysis && similarityNotice(analysis);
+    if (similarity) warnings.push(similarity);
     if (analysis && analysis.ssim < 0.85)
       warnings.push(
         "SSIM ниже 0.85: проверьте карту различий и предпросмотр. Текст и зерно тоже влияют на SSIM.",

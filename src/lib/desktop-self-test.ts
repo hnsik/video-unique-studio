@@ -1,5 +1,6 @@
 import { createEngine, processVideo } from "./pipeline";
 import { defaults } from "./processing";
+import { applyVisualPreset } from "./visual-presets";
 import {
   saveSource,
   saveTask,
@@ -19,16 +20,19 @@ export async function desktopSelfTest(bridge: DesktopBridge) {
       { stage: () => {}, progress: () => {} },
       () => false,
     );
-    const settings = {
-      ...defaults,
-      speed: 1.05,
-      durationVariation: true,
-      frameVariation: true,
-      overlay: "Windows FFmpeg",
-      subtitles: "1\n00:00:00,100 --> 00:00:01,000\nПроверка субтитров",
-      analysisSamples: 3,
-      audioNormalize: true,
-    };
+    const settings = applyVisualPreset(
+      {
+        ...defaults,
+        speed: 1.05,
+        durationVariation: true,
+        frameVariation: true,
+        overlay: "Windows FFmpeg",
+        subtitles: "1\n00:00:00,100 --> 00:00:01,000\nПроверка субтитров",
+        analysisSamples: 3,
+        audioNormalize: true,
+      },
+      "vivid",
+    );
     const result = await processVideo(engine, file, settings, 4, {
       stage: () => {},
       progress: () => {},
@@ -40,6 +44,7 @@ export async function desktopSelfTest(bridge: DesktopBridge) {
       !report.checks.decoded ||
       !report.checks.browserPlayback ||
       !report.analysis ||
+      report.settings.brightness !== 0.025 ||
       Math.abs(Number(a.duration) - report.timeline.duration) > 0.04 ||
       Number(v.nb_read_frames) !== report.timeline.frames
     )
@@ -73,6 +78,7 @@ export async function desktopSelfTest(bridge: DesktopBridge) {
     await bridge.selfTestFinish({
       ok: true,
       nativeFFmpeg: true,
+      visualPreset: "vivid",
       frames: report.checks.frames,
       videoDuration: Number(v.duration),
       audioDuration: Number(a.duration),
