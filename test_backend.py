@@ -8,10 +8,30 @@ import tempfile
 import threading
 import unittest
 from unittest.mock import patch
-from media_backend import command, route, platform, MARKER
+from media_backend import command, route, platform, MARKER, facebook_retry, browser_command, explain_error
 
 
 class RoutingTests(unittest.TestCase):
+    def test_facebook_retry(self):
+        url = 'https://www.facebook.com/reel/123'
+        error = 'ERROR: [facebook] 123: Cannot parse data'
+        self.assertTrue(facebook_retry(url, 'video', 1, 0, error))
+        for code, found, msg in [(0, 1, error), (1, 1, error), (1, 0, 'Private video')]:
+            self.assertFalse(facebook_retry(url, 'video', code, found, msg))
+        self.assertFalse(facebook_retry('https://youtube.com/watch?v=x', 'video', 1, 0, error))
+        args = command(url, '.', 'facebook cookies.txt')
+        retry = browser_command(args)
+        self.assertEqual(retry[-2:], ['--', url])
+        self.assertEqual(retry[retry.index('--cookies')+1], 'facebook cookies.txt')
+        self.assertIn('chrome-99', retry)
+        self.assertIn('FFmpeg к этой ошибке не относится', explain_error('video', error))
+
+    def test_browser_transport_available(self):
+        import yt_dlp
+        from yt_dlp.networking.impersonate import ImpersonateTarget
+        with yt_dlp.YoutubeDL({'quiet': True, 'impersonate': ImpersonateTarget.from_str('chrome-99')}) as ydl:
+            self.assertTrue(ydl._impersonate_target_available(ImpersonateTarget.from_str('chrome-99')))
+
     def test_routes(self):
         self.assertEqual(route('https://www.instagram.com/p/ABC/', 'all'), 'gallery')
         self.assertEqual(route('https://www.instagram.com/p/ABC/', 'photos'), 'gallery')

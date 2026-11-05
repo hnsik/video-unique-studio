@@ -24,6 +24,21 @@ class WorkerTests(unittest.TestCase):
         self.assertFalse(done[0][0])
         self.assertIn('Обработано ссылок: 1; ошибок: 1; файлов: 1', done[0][1])
 
+    def test_facebook_retry_once(self):
+        w = DownloadWorker(['https://facebook.com/reel/123'], '.', 'cookie.txt', 'best', 'all')
+        done = []
+        w.finished_result.connect(lambda ok, msg: done.append(ok))
+        with patch.object(w, 'execute', side_effect=[(1, 0, 'ERROR: [facebook] Cannot parse data'), (0, 1, '')]) as execute:
+            w.run()
+        self.assertEqual(execute.call_count, 2)
+        self.assertIn('chrome-99', execute.call_args.args[0])
+        self.assertEqual(done, [True])
+        done.clear()
+        with patch.object(w, 'execute', return_value=(1, 0, 'ERROR: [facebook] Cannot parse data')) as execute:
+            w.run()
+        self.assertEqual(execute.call_count, 2)
+        self.assertEqual(done, [False])
+
     def test_cancel_subprocess(self):
         w = DownloadWorker(['https://example.test/a'], '.', '', 'best', 'all')
         with patch('app.command', return_value=[sys.executable, '-c', 'import time; time.sleep(60)']):

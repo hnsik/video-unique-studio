@@ -1,14 +1,14 @@
 [Setup]
 AppId=VideoDownloaderStudio
 AppName=Video Downloader Studio
-AppVersion=1.1.0
+AppVersion=1.1.1
 DefaultDirName={localappdata}\Programs\VideoDownloaderStudio
 DefaultGroupName=Video Downloader Studio
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=release
-OutputBaseFilename=Video-Downloader-Studio-Setup-1.1.0-x64
+OutputBaseFilename=Video-Downloader-Studio-Setup-1.1.1-x64
 SetupIconFile=app.ico
 UninstallDisplayIcon={app}\VideoDownloaderStudio.exe
 Compression=lzma2

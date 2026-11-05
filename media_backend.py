@@ -89,10 +89,29 @@ def command(url, folder, cookies='', quality='best', media='all'):
     return cmd + ['--', url]
 
 
-def explain_error(engine):
+def facebook_retry(url, engine, code, found, output):
+    return (engine == 'video' and platform(url) == 'facebook' and code != 0
+            and found == 0 and 'cannot parse data' in output.lower())
+
+
+def browser_command(args):
+    # Preserve the supplied cookies and URL. One bounded compatibility retry.
+    return args[:-2] + ['--impersonate', 'chrome-99'] + args[-2:]
+
+
+def explain_error(engine, output=''):
+    lower = output.lower()
+    if '[facebook]' in lower and 'cannot parse data' in lower:
+        return ('Facebook не предоставил загрузчику распознаваемые данные ролика. '
+                'Проверьте воспроизведение в браузере и выберите актуальный cookies.txt именно от Facebook. '
+                'Если ролик открывается, а ошибка остаётся, обработчик Facebook пока несовместим с этой страницей. '
+                'FFmpeg к этой ошибке не относится.')
+    if 'sign in to confirm your age' in lower:
+        return 'YouTube требует аккаунт с доступом по возрасту. Выберите свежие cookies YouTube из аккаунта, где ролик воспроизводится.'
+    if 'removed by the uploader' in lower:
+        return 'YouTube сообщает, что ролик удалён автором. Проверьте доступность ссылки в браузере.'
+    if 'ffmpeg' in lower and ('not found' in lower or 'not installed' in lower):
+        return 'Не найден FFmpeg. Для EXE-версии восстановите установку программы.'
     if engine == 'gallery':
-        return ('Фото не получены. Проверьте cookies.txt и доступ к публикации. '
-                'Для Facebook скопируйте адрес открытой фотографии (photo/?fbid=…) '
-                'или альбома, а не ссылку на профиль или текстовый пост.')
-    return ('Видео не получено. Проверьте ссылку и доступ к публикации; '
-            'при запросе входа выберите актуальный cookies.txt. Для объединения потоков нужен FFmpeg.')
+        return ('Фото не получены. Проверьте доступ и cookies. Для Facebook используйте прямую ссылку открытой фотографии или альбома.')
+    return 'Видео не получено. Проверьте сообщение загрузчика выше, доступ к ролику и актуальность cookies нужного сайта.'

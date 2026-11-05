@@ -70,6 +70,6 @@ jobs:
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: downloader-v1.1.0-${{ github.run_number }}
+          TAG: downloader-v1.1.1-${{ github.run_number }}
         run: |
-          gh release create "$TAG" release/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Video Downloader Studio 1.1.0 — Windows' --notes 'Windows x64 installer with lemon icon, Python runtime and FFmpeg included. Tested installation, UI icon and local image/video downloads. Instagram/Facebook authentication is not tested. Unsigned build.' --latest=false
+          gh release create "$TAG" release/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Video Downloader Studio 1.1.1 — Windows' --notes 'Windows x64 installer with lemon icon, Python runtime and FFmpeg included. Tested installation, UI icon and local image/video downloads. Instagram/Facebook authentication is not tested. Unsigned build.' --latest=false

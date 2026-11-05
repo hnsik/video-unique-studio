@@ -10,7 +10,7 @@ dispatch_cli()
 import os
 import subprocess
 import threading
-from media_backend import command, route, explain_error, MARKER
+from media_backend import command, route, explain_error, MARKER, facebook_retry, browser_command
 import sys
 from pathlib import Path
 from PySide6.QtCore import QThread, Signal
@@ -36,6 +36,30 @@ class DownloadWorker(QThread):
                                creationflags=subprocess.CREATE_NO_WINDOW)
             else:
                 p.terminate()
+    def execute(self, args):
+        env = dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUNBUFFERED='1')
+        found = 0
+        tail = []
+        self.process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding='utf-8', errors='replace', env=env,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
+        if self.cancelled.is_set():
+            self.cancel()
+        try:
+            for line in self.process.stdout:
+                line = line.strip()
+                tail.append(line)
+                tail = tail[-40:]
+                if line.startswith(MARKER):
+                    found += 1
+                    self.log.emit('Файл готов / уже скачан: ' + line[len(MARKER):])
+                elif line:
+                    self.log.emit(line)
+            return self.process.wait(), found, '\n'.join(tail)
+        finally:
+            self.process.stdout.close()
+            self.process = None
+
     def run(self):
         errors = completed = files = 0
         for i, url in enumerate(self.urls, 1):
@@ -45,28 +69,15 @@ class DownloadWorker(QThread):
             try:
                 engine = route(url, self.media)
                 args = command(url, self.folder, self.cookies, self.quality, self.media)
-                env = dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUNBUFFERED='1')
-                found = 0
-                self.process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                    text=True, encoding='utf-8', errors='replace', env=env,
-                    creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
-                if self.cancelled.is_set():
-                    self.cancel()
-                for line in self.process.stdout:
-                    line = line.strip()
-                    if line.startswith(MARKER):
-                        found += 1
-                        self.log.emit('Файл готов / уже скачан: ' + line[len(MARKER):])
-                    elif line:
-                        self.log.emit(line)
-                code = self.process.wait()
-                self.process.stdout.close()
-                self.process = None
+                code, found, output = self.execute(args)
+                if not self.cancelled.is_set() and facebook_retry(url, engine, code, found, output):
+                    self.log.emit('Facebook: повторная попытка с совместимостью Chrome (1/1)…')
+                    code, found, output = self.execute(browser_command(args))
                 files += found
                 if self.cancelled.is_set():
                     break
                 if code or not found:
-                    raise RuntimeError(explain_error(engine))
+                    raise RuntimeError(explain_error(engine, output))
                 completed += 1
             except Exception as exc:
                 errors += 1
@@ -80,7 +91,7 @@ class DownloadWorker(QThread):
 class Window(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('Video Downloader Studio 1.1 — Instagram / Facebook')
+        self.setWindowTitle('Video Downloader Studio 1.1.1 — Instagram / Facebook')
         self.setWindowIcon(QIcon(str(BUNDLE / 'app.ico')))
         self.resize(760, 610)
         self.setStyleSheet('QWidget { font-size: 13px; } QPushButton { padding: 8px; } QLineEdit, QTextEdit, QComboBox { padding: 6px; }')
@@ -176,7 +187,7 @@ class Window(QWidget):
             return
         self.start.setEnabled(False)
         self.stop.setEnabled(True)
-        self.log.append('Начинаем. Прогресс — по обработанным ссылкам. Для объединения видео нужен FFmpeg в PATH.')
+        self.log.append('Начинаем. Прогресс — по обработанным ссылкам. FFmpeg включён в установочную EXE-версию.')
         self.bar.setValue(0)
         self.worker = DownloadWorker(urls, str(folder), self.cookie.text(), self.quality.currentData(), self.media.currentData())
         self.worker.log.connect(self.log.append)
