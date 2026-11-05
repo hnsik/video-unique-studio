@@ -61,3 +61,32 @@ export function hasVisualEffects(s: Settings) {
     s.auto
   );
 }
+
+/** A bounded editing preset, not an optimizer for a platform's classifier. */
+export function applyAutoPreset(s: Settings): Settings {
+  const timedText = !!s.subtitles.trim();
+  return {
+    ...applyVisualPreset(s, "vivid"),
+    auto: true,
+    strength: "medium",
+    speed: timedText ? s.speed : 1.03,
+    speedVariation: timedText ? 0 : 0.01,
+    brightness: 0.015,
+    contrast: 1.05,
+    saturation: 1.06,
+    zoom: 1.025,
+    hue: 0,
+    colorVariation: 0.015,
+    zoomVariation: 0.01,
+    // Speed changes the timeline without adding a frozen tail or cutting the end.
+    durationVariation: false,
+    frameVariation: false,
+    analysis: true,
+    analysisSamples: 9,
+    qualityRetry: true,
+    adaptive: true,
+    crf: 21,
+    format: "mp4",
+    metadata: "strip",
+  };
+}

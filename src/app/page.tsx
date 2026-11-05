@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import {
   defaults,
+  randomFor,
   validateSettings,
   generateSrt,
   parseSrt,
@@ -28,6 +29,7 @@ import { createEngine, processVideo, type Engine } from "@/lib/pipeline";
 import {
   visualPresets,
   applyVisualPreset,
+  applyAutoPreset,
   hasVisualEffects,
   type VisualPreset,
 } from "@/lib/visual-presets";
@@ -270,6 +272,32 @@ export default function Home() {
   }
   const change = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     void update({ ...cfg, [key]: value });
+  async function autoQueue() {
+    if (busy || planLock.current) return;
+    planLock.current = true;
+    let count = 0;
+    try {
+      for (const task of activeTasks.current.filter(
+        (t) => t.state === "queued" && !t.sourceDeleted,
+      )) {
+        await put({
+          ...task,
+          settings: {
+            ...randomFor(applyAutoPreset(task.settings), task.index),
+            auto: false,
+          },
+        });
+        count++;
+      }
+      setNotice(
+        `Авто применено к ${count} ожидающим задачам. Настройки каждого варианта доступны для ручной правки.`,
+      );
+    } catch (error) {
+      setNotice(`Обновлено задач: ${count}. ${errorText(error)}`);
+    } finally {
+      planLock.current = false;
+    }
+  }
   async function put(t: Task) {
     await saveTask(t);
     setTasks((p) =>
@@ -324,7 +352,7 @@ export default function Home() {
     }
   }
   async function run() {
-    if (runLock.current || !ready) return;
+    if (runLock.current || planLock.current || !ready) return;
     const queue = activeTasks.current.filter(
       (t) => t.state === "queued" && !t.sourceDeleted,
     );
@@ -1094,6 +1122,46 @@ export default function Home() {
           <fieldset className="settings-scroll" disabled={busy}>
             {tab === "video" && (
               <>
+                <h3>Автоматическая настройка</h3>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    const next = applyAutoPreset(cfg);
+                    void update(
+                      scoped
+                        ? { ...randomFor(next, scoped.index), auto: false }
+                        : next,
+                    );
+                  }}
+                >
+                  Авто — сбалансированная обработка
+                </button>
+                <p className="notice">
+                  Цвет, приближение 2,5–3,5%, скорость 1,02–1,04×, MP4, очистка
+                  метаданных и анализ 9 пар кадров. Длительность меняется за
+                  счёт скорости, без добавления стоп-кадра. При наличии
+                  субтитров выбранная скорость сохраняется. При низком SSIM
+                  повторная обработка смягчает эффекты. Это готовый профиль, а
+                  не поиск максимального отличия или гарантия оригинальности.
+                  {scoped
+                    ? " Применяется к выбранному варианту."
+                    : " Применяется к новым задачам; для готовой очереди используйте кнопку ниже."}
+                </p>
+                {!scoped && (
+                  <button
+                    type="button"
+                    className="btn small"
+                    disabled={
+                      !tasks.some(
+                        (t) => t.state === "queued" && !t.sourceDeleted,
+                      )
+                    }
+                    onClick={() => void autoQueue()}
+                  >
+                    Применить Авто к ожидающим задачам
+                  </button>
+                )}
                 <h3>Профиль изображения</h3>
                 <div className="actions" aria-label="Профили изображения">
                   {(Object.keys(visualPresets) as VisualPreset[]).map((key) => (

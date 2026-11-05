@@ -18,7 +18,11 @@ import {
 } from "../src/lib/processing";
 import { cleanMp4, fastStart, atoms } from "../src/lib/mp4";
 import { compareFrames, similarityNotice } from "../src/lib/metrics";
-import { applyVisualPreset, hasVisualEffects } from "../src/lib/visual-presets";
+import {
+  applyAutoPreset,
+  applyVisualPreset,
+  hasVisualEffects,
+} from "../src/lib/visual-presets";
 import { createZip, csv } from "../src/lib/export";
 const exec = promisify(execFile);
 async function probe(file: string): Promise<Probe> {
@@ -208,6 +212,7 @@ test("native video exports: timeline frames, AAC sync, crop/color/audio/text fil
       { ...defaults, mute: true },
       applyVisualPreset(defaults, "natural"),
       applyVisualPreset(defaults, "vivid"),
+      randomFor(applyAutoPreset(defaults), 4),
     ];
     for (let i = 0; i < cases.length; i++) {
       const s = cases[i],
@@ -402,4 +407,36 @@ test("queue plans 50 independent variants, enforces total cap, and does not reus
   const next = createPlan([source], defaults, retained, true);
   assert.equal(next[0].index, 13);
   assert.equal(next[0].settings.resolution, "720");
+});
+
+test("auto profile keeps user content and creates bounded edits without a frozen tail", () => {
+  const input = {
+    ...defaults,
+    overlay: "My caption",
+    mute: true,
+    volume: 0.7,
+    fps: 60,
+  };
+  const preset = applyAutoPreset(input);
+  assert.equal(input.speed, 1);
+  for (let i = 0; i < 50; i++) {
+    const s = validateSettings(randomFor(preset, i));
+    assert(s.speed >= 1.02 && s.speed <= 1.04);
+    assert(s.zoom >= 1.025 && s.zoom <= 1.035);
+    assert.equal(s.overlay, input.overlay);
+    assert.equal(s.mute, true);
+    assert.equal(s.volume, 0.7);
+    assert.equal(s.fps, 60);
+    assert.equal(s.analysisSamples, 9);
+    const t = timeline(s, 60, i);
+    assert.equal(t.deltaFrames, 0);
+    assert(t.duration < 60);
+  }
+  const captions = {
+    ...input,
+    speed: 0.95,
+    subtitles: "1\n00:00:00,000 --> 00:00:01,000\nText",
+  };
+  assert.equal(randomFor(applyAutoPreset(captions), 4).speed, 0.95);
+  assert.equal(applyAutoPreset(captions).subtitles, captions.subtitles);
 });
