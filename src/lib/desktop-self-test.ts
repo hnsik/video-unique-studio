@@ -46,6 +46,8 @@ export async function desktopSelfTest(bridge: DesktopBridge) {
       speed: 1.05,
       segments: "0.5 1.5\n0 0.5",
       zoomKeys: "0 1\n0.7 1.08\n1.2 1",
+      voiceId: "self-test-voice",
+      voiceStart: 0.1,
       durationVariation: true,
       frameVariation: true,
       overlay: "Windows FFmpeg",
@@ -53,10 +55,17 @@ export async function desktopSelfTest(bridge: DesktopBridge) {
       analysisSamples: 3,
       audioNormalize: true,
     });
-    const result = await processVideo(engine, file, settings, 4, {
-      stage: () => {},
-      progress: () => {},
-    });
+    const result = await processVideo(
+      engine,
+      file,
+      settings,
+      4,
+      {
+        stage: () => {},
+        progress: () => {},
+      },
+      file,
+    );
     const report = result.report,
       v = report.output.streams.find((x) => x.codec_type === "video")!,
       a = report.output.streams.find((x) => x.codec_type === "audio")!;
@@ -102,6 +111,7 @@ export async function desktopSelfTest(bridge: DesktopBridge) {
       visualPreset: "auto-analysis",
       selectedButtonUI: true,
       montageAndZoom: true,
+      narrationMix: true,
       frames: report.checks.frames,
       videoDuration: Number(v.duration),
       audioDuration: Number(a.duration),
