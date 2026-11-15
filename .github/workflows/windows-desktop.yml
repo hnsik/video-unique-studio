@@ -124,9 +124,9 @@ jobs:
           cat > /tmp/vus-release-notes.md <<'NOTES'
           Windows 10/11 x64 installer for Video Unique Studio.
 
-          Includes application runtime, offline FFmpeg/FFprobe and 110 procedural textures. Version 3.0.1 integrates Texture Effectiveness Analyzer: per-card tests, pre-encode measurements, independent control exports, comparison tables, VMAF when available, SQLite history, automatic selection and CSV/JSON/HTML/PDF reports. Existing timeline editing, layers, presets and batch export are preserved. See desktop/USER-GUIDE.md and desktop/V3-STATUS.md for usage and limits. All media processing runs locally.
+          Includes application runtime, offline FFmpeg/FFprobe and 110 procedural textures. Version 3.0.2 adds optional AI processing (OpenRouter free route, Gemini/Groq free-account keys), five embedded instruction modules, validated JSON plans, real candidate trials, per-video settings and encrypted key storage. Media stays local; optional API requests contain numerical measurements only. Live provider calls require user keys and were tested with contract fixtures, not a live paid account. Also integrates Texture Effectiveness Analyzer: per-card tests, pre-encode measurements, independent control exports, comparison tables, VMAF when available, SQLite history, automatic selection and CSV/JSON/HTML/PDF reports. Existing timeline editing, layers, presets and batch export are preserved. See desktop/USER-GUIDE.md and desktop/V3-STATUS.md for usage and limits. All media processing runs locally.
 
-          This exact installer was installed and exercised on a Windows runner: bundled components and reuse, legacy video/audio export, metadata cleanup, frame metrics, Chromium playback, and the 3.0 interface with five layers, interior frame editing, generator preview, preset save and final export. The installed analyzer additionally performs a full texture test and produces all four report formats, including a real PDF. This is not a physical Ryzen/RX 570 or separate Windows 10 benchmark.
+          This exact installer was installed and exercised on a Windows runner: bundled components and reuse, legacy video/audio export, metadata cleanup, frame metrics, Chromium playback, and the 3.0 interface with five layers, interior frame editing, generator preview, preset save and final export. The installed analyzer additionally performs a full texture test and produces all four report formats, including a real PDF. Installed local AI selection and Windows encrypted key storage are exercised. This is not a physical Ryzen/RX 570 or separate Windows 10 benchmark.
 
           FFmpeg is distributed under GPLv3. The corresponding upstream FFmpeg snapshot is attached as FFmpeg-9.0.2-Source.zip; see FFmpeg-SOURCES.txt and the installed licenses for the build configuration and provider details.
 
@@ -135,6 +135,6 @@ jobs:
           if gh release view "$RELEASE_TAG" --repo hnsik/video-unique-studio >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --clobber
           else
-            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.0.1 — Texture Analyzer" --notes-file /tmp/vus-release-notes.md
+            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.0.2 — AI processing" --notes-file /tmp/vus-release-notes.md
           fi
 

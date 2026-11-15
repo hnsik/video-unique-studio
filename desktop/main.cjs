@@ -154,7 +154,7 @@ async function finishTest(result) {
       2,
     ),
   );
-  if(v3Test&&window) { const screenshot=await window.webContents.capturePage(); await fs.writeFile(reportPath+".png",screenshot.toPNG()); }
+  if(v3Test&&window) { window.showInactive(); window.webContents.invalidate(); await new Promise(r=>setTimeout(r,300)); const screenshot=await window.webContents.capturePage(); await fs.writeFile(reportPath+".png",screenshot.toPNG()); }
   await engine?.closeAll();
   app.exit(result.ok ? 0 : 1);
 }
@@ -181,7 +181,7 @@ async function start() {
       if(url.pathname.startsWith('/media/')) file=await studio3.media(url.pathname.slice(7));
       else if(url.pathname.startsWith('/v3/')) {
         const name=url.pathname.slice(4);
-        if(!['index.html','app.js','texture-analyzer.js','style.css'].includes(name))throw Error('Invalid asset');
+        if(!['index.html','app.js','texture-analyzer.js','ai.js','style.css'].includes(name))throw Error('Invalid asset');
         file=path.join(__dirname,'v3',name);
       } else file=safeAsset(request.url);
       if(!file)throw Error('Missing media');
@@ -344,7 +344,7 @@ async function start() {
           ok: false,
           error: "Desktop integration test timed out",
         }),
-      240000,
+      480000,
     );
   }
   await window.loadFile(path.join(__dirname, "splash.html"));

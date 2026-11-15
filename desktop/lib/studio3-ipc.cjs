@@ -4,10 +4,18 @@ const cache=require('./cache.cjs'),timeline=require('./timeline.cjs');
 const path=require('node:path'),fs=require('node:fs/promises'),{randomUUID}=require('node:crypto');
 function register({handle,dialog,shell,getWindow,getTools,root,resultsRoot,selfTest=false,finishTest}){
  let studioPromise;const folders=new Set([resultsRoot]);
- const studio=async()=>{if(!studioPromise)studioPromise=(async()=>{const s=new Studio({tools:getTools(),root,onEvent:value=>getWindow()?.webContents.send('studio3:update',value)});await s.init();s.textureAnalyzer=await new (require('./texture-analyzer.cjs').TextureAnalyzer)(s).init();for(const j of s.queue)folders.add(j.folder);if(s.state.outputFolder)folders.add(s.state.outputFolder);return s;})();return studioPromise;};
+ const studio=async()=>{if(!studioPromise)studioPromise=(async()=>{const s=new Studio({tools:getTools(),root,onEvent:value=>getWindow()?.webContents.send('studio3:update',value)});await s.init();s.textureAnalyzer=await new (require('./texture-analyzer.cjs').TextureAnalyzer)(s).init();const vault=await new (require('./ai/vault.cjs').Vault)(root,require('electron').safeStorage).init();s.ai=await new (require('./ai/engine.cjs').AIEngine)(s,vault).init();for(const r of Object.values(s.state.aiResults||{}))if(r.preview)s.outputs.set(r.preview.id,r.preview.path);for(const j of s.queue)folders.add(j.folder);if(s.state.outputFolder)folders.add(s.state.outputFolder);return s;})();return studioPromise;};
  handle('studio3:call',async(_e,action,data={})=>{const s=await studio();
  const execute=async()=>{switch(action){
  case 'init':return{...s.snapshot(),defaults:DEFAULT,layerDefaults:LAYER,kinds,folder:s.state.outputFolder||resultsRoot,textureTests:s.textureAnalyzer.snapshot(),vmaf:s.textureAnalyzer.vmaf,selfTest};
+ case 'aiConfig':return s.ai.config();
+ case 'aiOptions':return s.ai.saveOptions(data);
+ case 'aiKey':return s.ai.vault.set(data.provider,data.key);
+ case 'aiConnection':return s.ai.connection();
+ case 'aiStart':return s.ai.start(data);
+ case 'aiStatus':return s.ai.snapshot();
+ case 'aiCancel':s.ai.cancel(data.id);return true;
+ case 'aiClear':delete s.state.aiResults?.[data.id];await s.save();return true;
  case 'textureTestStart':return s.textureAnalyzer.start(data);
  case 'textureTestStatus':return s.textureAnalyzer.snapshot();
  case 'textureTestCancel':s.textureAnalyzer.cancel(data.id);return true;
@@ -32,7 +40,7 @@ function register({handle,dialog,shell,getWindow,getTools,root,resultsRoot,selfT
  case 'removeSource':s.assets.delete(data.id);await s.save();return true;
  case 'generate':{if(s.generating)throw Error('Дождитесь окончания генерации');s.generating=true;try{return await s.generate(data);}finally{s.generating=false;}}
  case 'texturePreview':{const t=s.texture(data.id);return{url:'vus://studio/media/'+t.id};}
- case 'export':if(!folders.has(data.folder))throw Error('Выберите папку экспорта');return s.enqueue(data.ids,data.settings,data.folder);
+ case 'export':if(!folders.has(data.folder))throw Error('Выберите папку экспорта');if(data.perSource){if(data.ids.some(id=>!data.perSource[id]))throw Error('Не для всех видео выбраны настройки');for(const id of data.ids)validate(data.perSource[id]);if(s.queue.filter(j=>['queued','running'].includes(j.status)).length+data.ids.length>50)throw Error('Максимум 50 заданий');for(const id of data.ids)await s.enqueue([id],data.perSource[id],data.folder);return s.snapshot();}return s.enqueue(data.ids,data.settings,data.folder);
  case 'preview':{const source=s.assets.get(data.id);if(!source)throw Error('Выберите видео');const v=source.probe.streams.find(x=>x.codec_type==='video'),rotated=Math.abs(v.side_data_list?.find(x=>x.rotation)?.rotation||0)%180===90,ow=data.settings.width||(rotated?v.height:v.width),oh=data.settings.height||(rotated?v.width:v.height),ratio=Math.min(1,640/Math.max(ow,oh)),folder=path.join(root,'preview');await fs.mkdir(folder,{recursive:true});const result=await s.process({source,folder,settings:{...data.settings,width:Math.max(2,Math.round(ow*ratio/2)*2),height:Math.max(2,Math.round(oh*ratio/2)*2),analysis:false,filename:'preview-'+randomUUID()},index:1},!data.full);await cache.prune(root,(s.state.cacheMB||1024)*1048576,[result.path,result.path+'.json']);s.emit();return result;}
  case 'pause':s.paused=!s.paused;s.emit();if(!s.paused)s.drain();return s.snapshot();
  case 'cancel':s.cancel();return true;
@@ -56,6 +64,6 @@ function register({handle,dialog,shell,getWindow,getTools,root,resultsRoot,selfT
  case 'openResults':return shell.openPath([...folders].includes(data.folder)?data.folder:resultsRoot);
  default:throw Error('Неизвестное действие');
  }};const heavy=['proxy','preview','analyze','textureExport','animationExport','cacheClear','cacheBudget','generatorPreview','generate','textureTestExport'];return heavy.includes(action)?s.exclusive(action,execute):execute();});
- return{async media(id){const s=await studio();const a=s.assets.get(id),builtin=catalog.find(t=>t.id===id);return a?.path||s.outputs.get(id)||(builtin&&path.join(__dirname,'../assets/textures',builtin.category,id+'.png'));},async close(){if(studioPromise){const s=await studioPromise;s.closing=true;s.cancel();await s.taskChain;await s.save();s.textureAnalyzer?.close();}}};
+ return{async media(id){const s=await studio();const a=s.assets.get(id),builtin=catalog.find(t=>t.id===id);return a?.path||s.outputs.get(id)||(builtin&&path.join(__dirname,'../assets/textures',builtin.category,id+'.png'));},async close(){if(studioPromise){const s=await studioPromise;s.closing=true;for(const j of s.ai?.jobs||[])s.ai.cancel(j.id);s.cancel();await s.taskChain;await s.save();s.textureAnalyzer?.close();}}};
 }
 module.exports={register};
