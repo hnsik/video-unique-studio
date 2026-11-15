@@ -234,6 +234,13 @@ async function start() {
       webSecurity: true,
     },
   });
+  let closingWindow = false;
+  window.on('close', event => {
+    if (closingWindow || selfTest) return;
+    event.preventDefault();
+    window.webContents.executeJavaScript('window.vusFlush ? window.vusFlush() : true')
+      .catch(() => {}).finally(() => { closingWindow = true; window.close(); });
+  });
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event, url) => {
     const u = new URL(url);
@@ -364,11 +371,8 @@ if (!selfTest && !app.requestSingleInstanceLock()) {
     if (quitting) return;
     quitting = true;
     controller?.abort();
-    void studio3?.close();
-    if (engine) {
-      event.preventDefault();
-      engine.closeAll().finally(() => app.quit());
-    }
+    event.preventDefault();
+    Promise.allSettled([studio3?.close(), engine?.closeAll()]).finally(() => app.quit());
   });
 }
 

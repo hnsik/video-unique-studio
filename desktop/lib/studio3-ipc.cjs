@@ -45,6 +45,6 @@ function register({handle,dialog,shell,getWindow,getTools,root,resultsRoot,selfT
  case 'openResults':return shell.openPath([...folders].includes(data.folder)?data.folder:resultsRoot);
  default:throw Error('Неизвестное действие');
  }};const heavy=['proxy','preview','analyze','textureExport','animationExport','cacheClear','cacheBudget','generatorPreview','generate'];return heavy.includes(action)?s.exclusive(action,execute):execute();});
- return{async media(id){const s=await studio();const a=s.assets.get(id),builtin=catalog.find(t=>t.id===id);return a?.path||s.outputs.get(id)||(builtin&&path.join(__dirname,'../assets/textures',builtin.category,id+'.png'));},async close(){if(studioPromise){const s=await studioPromise;s.cancel();await s.save();}}};
+ return{async media(id){const s=await studio();const a=s.assets.get(id),builtin=catalog.find(t=>t.id===id);return a?.path||s.outputs.get(id)||(builtin&&path.join(__dirname,'../assets/textures',builtin.category,id+'.png'));},async close(){if(studioPromise){const s=await studioPromise;s.closing=true;s.cancel();await s.taskChain;await s.save();}}};
 }
 module.exports={register};
