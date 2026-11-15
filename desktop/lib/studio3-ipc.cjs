@@ -19,6 +19,8 @@ function register({handle,dialog,shell,getWindow,getTools,root,resultsRoot,selfT
  case 'previewCancel':s.previewService.cancel();return true;
  case 'retryCPU':{await s.performanceService.save({...s.performanceService.config().options,encoder:'cpu'});const j=s.queue.find(j=>j.id===data.id);if(j&&j.status==='error'){j.status='queued';delete j.error;s.drain();}return s.snapshot();}
  case 'aiConfig':return s.ai.config();
+ case 'aiPreview':{const r=s.state.aiResults?.[data.id];if(!r)throw Error('Нет результата ИИ');if(r.preview?.path&&path.resolve(r.preview.path).startsWith(path.resolve(root,'preview')+path.sep)){try{await fs.access(r.preview.path);s.outputs.set(r.preview.id,r.preview.path);return r.preview;}catch{}}return s.previewService.request({id:data.id,settings:r.settings},false);}
+ case 'aiModels':return s.ai.manager.models(data.provider,{force:!!data.force,workspace:s.ai.options().workspace});
  case 'aiOptions':return s.ai.saveOptions(data);
  case 'aiKey':return s.ai.vault.set(data.provider,data.key);
  case 'aiConnection':return s.ai.connection();

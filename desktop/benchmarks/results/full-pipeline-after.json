@@ -1,0 +1,37 @@
+[
+  {
+    "name": "inspect-cold",
+    "seconds": 0.6052235129999999,
+    "nativeCalls": 5
+  },
+  {
+    "name": "inspect-repeat",
+    "seconds": 0.0009548859999999877,
+    "nativeCalls": 0
+  },
+  {
+    "name": "preview-cold",
+    "seconds": 0.723684503,
+    "nativeCalls": 0
+  },
+  {
+    "name": "preview-repeat",
+    "seconds": 0.006046700999999757,
+    "nativeCalls": 0
+  },
+  {
+    "name": "texture-full-cold",
+    "seconds": 3.5492254649999997,
+    "nativeCalls": 19
+  },
+  {
+    "name": "texture-full-repeat",
+    "seconds": 2.682958955,
+    "nativeCalls": 14
+  },
+  {
+    "name": "AI-local-and-export",
+    "seconds": 10.058058768999999,
+    "nativeCalls": 54
+  }
+]

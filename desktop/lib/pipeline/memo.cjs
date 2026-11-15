@@ -1,0 +1,4 @@
+'use strict';
+const{identity,digest}=require('./cache.cjs');
+async function memo(s,file,kind,options,fn){if(s.cancelled)throw Error('Обработка отменена');s.measurementCache??=new Map();s.measurementBytes??=0;const key=digest({file:await identity(file),kind,options});const hit=s.measurementCache.get(key);if(hit){s.measurementCache.delete(key);s.measurementCache.set(key,hit);return hit.value;}const value=await fn(),bytes=Buffer.isBuffer(value)?value.length:Buffer.byteLength(JSON.stringify(value));if(bytes<=16*1048576){while(s.measurementCache.size>=100||s.measurementBytes+bytes>16*1048576){const k=s.measurementCache.keys().next().value;s.measurementBytes-=s.measurementCache.get(k).bytes;s.measurementCache.delete(k);}s.measurementCache.set(key,{value,bytes});s.measurementBytes+=bytes;}return value;}
+module.exports={memo};

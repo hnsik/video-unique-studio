@@ -39,8 +39,8 @@ jobs:
           $installer = Get-ChildItem desktop-dist -Filter '*Setup*.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Installer not found' }
           $installRoot = Join-Path $env:RUNNER_TEMP 'VUSInstalled'
-          $oldInstaller = Join-Path $env:RUNNER_TEMP 'VUS-3.0.2-Setup.exe'
-          Invoke-WebRequest 'https://github.com/hnsik/video-unique-studio/releases/download/windows-v3-26/VideoUniqueStudio-3.0-Setup.exe' -OutFile $oldInstaller
+          $oldInstaller = Join-Path $env:RUNNER_TEMP 'VUS-3.1.0-Setup.exe'
+          Invoke-WebRequest 'https://github.com/hnsik/video-unique-studio/releases/download/windows-v3-31/VideoUniqueStudio-3.0-Setup.exe' -OutFile $oldInstaller
           $oldInstall = Start-Process -FilePath $oldInstaller -ArgumentList @('/S', "/D=$installRoot") -Wait -PassThru
           if ($oldInstall.ExitCode -ne 0) { throw 'Old installation failed' }
           $oldExe = Join-Path $installRoot 'Video Unique Studio.exe'
@@ -96,8 +96,8 @@ jobs:
           $updated = Get-Content $stateFile -Raw | ConvertFrom-Json
           if (-not ($updated.presets | Where-Object id -eq 'upgrade-sentinel') -or -not ($updated.textures | Where-Object id -eq 'upgrade-sentinel')) { throw 'Upgrade lost user records' }
           if ((Get-FileHash $sentinel -Algorithm SHA256).Hash -ne $textureHash) { throw 'Upgrade changed user texture' }
-          if ((Get-FileHash (Join-Path $profile 'backups/3.1.0-state.json') -Algorithm SHA256).Hash -ne $priorHash) { throw 'Upgrade backup mismatch' }
-          @{ ok=$true; from='3.0.2'; to='3.1.0'; presetPreserved=$true; texturePreserved=$true; exactStateBackup=$true } | ConvertTo-Json | Set-Content desktop-dist/studio3-upgrade.json
+          if ((Get-FileHash (Join-Path $profile 'backups/3.2.0-state.json') -Algorithm SHA256).Hash -ne $priorHash) { throw 'Upgrade backup mismatch' }
+          @{ ok=$true; from='3.1.0'; to='3.2.0'; presetPreserved=$true; texturePreserved=$true; exactStateBackup=$true } | ConvertTo-Json | Set-Content desktop-dist/studio3-upgrade.json
           Copy-Item $report3 desktop-dist/
           Copy-Item "$report3.png" desktop-dist/ -ErrorAction SilentlyContinue
           $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLower()
@@ -113,6 +113,7 @@ jobs:
             desktop-dist/FFmpeg-SOURCES.txt
             desktop-dist/desktop-smoke-*.json
             desktop-dist/studio3-smoke*
+            desktop-dist/studio3-upgrade.json
             desktop-dist/texture-report.*
           if-no-files-found: error
           retention-days: 30
@@ -122,6 +123,7 @@ jobs:
           name: Studio3-UI-verification
           path: |
             desktop-dist/studio3-smoke*
+            desktop-dist/studio3-upgrade.json
             desktop-dist/texture-report.*
           if-no-files-found: error
       - name: Upload diagnostics after failure
@@ -152,9 +154,11 @@ jobs:
           cat > /tmp/vus-release-notes.md <<'NOTES'
           Windows 10/11 x64 installer for Video Unique Studio.
 
-          Version 3.1.0 Performance: measured thread selection, bounded texture cache, single-decode static layers, separate quick export and streaming sampled/full analysis, independent cancellable frame preview, live FFmpeg progress, CPU/RAM counters, real AMF and hardware-decoding probes, SQLite benchmark history and project-specific Smart Processing Engine. Effects and output quality settings are preserved. See desktop/PERFORMANCE.md for measurements and limits.
+          Version 3.2.0 Full Pipeline: six AI provider adapters (Gemini, OpenAI, Claude, DeepSeek, Groq, OpenRouter), cached model discovery, explicit model allowlists, bounded retries/Retry-After, request budgets and opt-in billing. Source inspection, PCM analysis, texture controls and invariant metrics are cached with file-change invalidation. Adds exact full-resolution frame preview, stale-preview removal, restored AI previews, detailed phase timings and module diagnostics. Existing export effects and encoding settings are preserved.
 
-          The installer was exercised on a Windows CI runner, including installation over 3.0.2, exact settings backup and preservation of a preset and custom texture. Native regression tests compare pre-encode pixels with the 3.0.2 engine. The installed app runs all benchmark scenarios and frame-preview cache checks. Physical Ryzen 5 2600 / RX 570 and the user's original 19-second clip were not available. Automatic GPU use requires a successful local full-pipeline quality/speed test.
+          Live provider requests need the user's keys and were not executed during development. HTTP contracts, error recovery, billing restrictions and cache behavior are tested with fixtures. Paid generation in diagnostics is disabled unless explicitly enabled by the user. Physical RX570/AMD driver performance remains unverified.
+
+          This installer was installed over 3.1.0 on a Windows runner. Tests verify presets/custom textures and an exact settings backup, native export, pixel parity, quick/exact preview, cached texture analysis, local AI and real CPU/RAM/progress counters. See desktop/FULL-PIPELINE.md for measurements and limitations.
 
           FFmpeg is distributed under GPLv3. The corresponding upstream FFmpeg snapshot is attached as FFmpeg-9.0.2-Source.zip; see FFmpeg-SOURCES.txt and the installed licenses for the build configuration and provider details.
 
@@ -163,6 +167,6 @@ jobs:
           if gh release view "$RELEASE_TAG" --repo hnsik/video-unique-studio >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --clobber
           else
-            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.1.0 — Performance" --notes-file /tmp/vus-release-notes.md
+            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.2.0 — Full Pipeline" --notes-file /tmp/vus-release-notes.md
           fi
 
