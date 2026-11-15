@@ -138,6 +138,7 @@ async function prepare(forceDownload = false) {
   return setupPromise;
 }
 async function finishTest(result) {
+  if(v3Test){try{result.lastStage=await fs.readFile(path.join(app.getPath('userData'),'studio3','selftest-stage.txt'),'utf8');}catch{}}
   if (!selfTest) throw Error("Self-test disabled");
   clearTimeout(selfTestTimer);
   await fs.mkdir(path.dirname(path.resolve(reportPath)), { recursive: true });

@@ -1,6 +1,6 @@
 'use strict';
 window.AIUI=(()=>{
- const drafts=new Map();let active=null;
+ const drafts=new Map();let active=null,manualApplying=false;
  function modal(title){const d=node('dialog',undefined,'teaDialog');d.append(node('h2',title),button('Закрыть',()=>{d.close();d.remove();}));document.body.append(d);d.showModal();return d;}
  function choice(root,label,obj,key,options){const wrap=node('label',undefined,'field'),el=node('select');for(const[v,t]of options){const o=node('option',t);o.value=v;el.append(o);}el.value=obj[key];el.onchange=()=>obj[key]=el.value;wrap.append(node('span',label),el);root.append(wrap);return el;}
  function toggle(root,label,obj,key){const wrap=node('label',undefined,'check'),el=node('input');el.type='checkbox';el.checked=!!obj[key];el.onchange=()=>obj[key]=el.checked;wrap.append(el,node('span',label));root.append(wrap);}
@@ -42,17 +42,17 @@ window.AIUI=(()=>{
  d.append(node('p','Будут применены параметры выбранного варианта без ослабления. Предупреждения качества сохранятся в отчёте. Полный ролик и финальное разрешение не проверены — перед экспортом просмотрите результат.'));
  for(const issue of [...(variant.issues||[]),...(variant.finalIssues||[])])d.append(node('p',issue.message));
  const status=node('p');let busy=false;const apply=button('Применить с предупреждением',async()=>{
- if(busy)return;busy=true;apply.disabled=true;status.textContent='Сохраняем выбранный вариант…';
+ if(busy)return;busy=true;manualApplying=true;apply.disabled=true;status.textContent='Сохраняем выбранный вариант…';
  try{const r=await call('aiApplyCandidate',{jobId,sourceId:item.sourceId,candidateId:variant.id,acceptWarnings:true});
- remember();choose(item.sourceId);state.aiResults??={};state.aiResults[item.sourceId]=r;drafts.set(item.sourceId,structuredClone(r.settings));
- previewResult=null;$('after').pause();$('after').removeAttribute('src');$('after').load();restore(item.sourceId);
+ remember();choose(item.sourceId,{restoreAI:false});state.aiResults??={};state.aiResults[item.sourceId]=r;drafts.set(item.sourceId,structuredClone(r.settings));
+ previewResult=null;$('after').pause();$('after').removeAttribute('src');$('after').load();settings=structuredClone(r.settings);render();status.textContent='Вариант сохранён. Создаём предпросмотр…';const preview=await call('aiPreview',{id:item.sourceId});if(preview&&selected===item.sourceId){previewResult=preview;$('after').src=media(preview.id);}
  for(const dialog of document.querySelectorAll('dialog.teaDialog[open]')){dialog.close();dialog.remove();}
  $('status').textContent='Выбран '+variant.id+' вручную · проверьте до/после и нажмите «Экспортировать»';toast('Вариант применён без ослабления');
- }catch(e){status.textContent=e.message;}finally{busy=false;apply.disabled=false;}
+ }catch(e){status.textContent=e.message;}finally{busy=false;manualApplying=false;apply.disabled=false;}
  });d.append(status,apply);
  }
  async function poll(){const p=active;if(!p)return;try{const jobs=await call('aiStatus'),j=jobs.find(x=>x.id===p.id);if(!j)return;p.body.replaceChildren(node('p',j.stage),node('p',j.apiProgress?`${j.apiProgress.stage} · ${j.apiProgress.provider} / ${j.apiProgress.model}${j.apiProgress.message?' · '+j.apiProgress.message:''}`:''),node('p',`${j.done}/${j.total} · ${Math.round((Date.now()-j.started)/1000)} с`));if(j.apiProgress?.details){const detail=node('details');detail.append(node('summary','Подробности ошибки API'),node('pre',JSON.stringify(j.apiProgress.details,null,2)));p.body.append(detail);}for(const i of j.items){p.body.append(node('p',i.name+' · '+({queued:'В очереди',running:'Обработка',done:'Готово',error:'Ошибка',cancelled:'Отменено'}[i.status])+(i.error?' · '+i.error:'')));if(i.variants?.length&&['done','error'].includes(j.status))p.body.append(variantDetails(i,j.id));if(i.status==='done'&&i.result){const r=i.result;state.aiResults??={};state.aiResults[i.sourceId]=r;drafts.set(i.sourceId,structuredClone(r.settings));p.body.append(node('p',`${r.provider==='local'?'Локальный подбор':'ИИ: '+r.provider} · ${r.settings.layers.length} слоёв · ${r.reason}`));for(const l of r.settings.layers){const t=[...state.catalog,...state.textures].find(t=>t.id===l.textureId);p.body.append(node('p',`${t?.name||l.textureId}: ${l.opacity.toFixed(1)}% · ${l.mode} · ${l.enabled?'включён':'выключен'}`));}p.body.append(node('p',`Полное время: ${r.seconds.toFixed(1)} с · API: ${(r.apiTimings||[]).reduce((sum,t)=>sum+(t.seconds||0),0).toFixed(1)} с`));if(r.warning)p.body.append(node('p',r.warning));p.body.append(button('Отчёт проверки',()=>showReport(r)),button('До / после',()=>{choose(i.sourceId);p.d.close();p.d.remove();}));}}
  if(['done','error','cancelled'].includes(j.status)){active=null;$('export').disabled=false;if(j.error)p.body.append(node('p',j.error));if(j.items.some(i=>i.sourceId===selected&&i.status==='done'))restore(selected);$('status').textContent=j.items.some(i=>i.status==='done')?'Подбор завершён · проверьте до/после и нажмите «Экспортировать»':'Подбор не применён · откройте причины отклонения вариантов';return;}
  }catch(e){p.body.append(node('p',e.message));}setTimeout(poll,500);}
- $('aiProcess').onclick=()=>act(start);return{configure,start,remember,restore,exportSettings,diagnostics,showJob:progress};
+ $('aiProcess').onclick=()=>act(start);return{configure,start,remember,restore,exportSettings,diagnostics,showJob:progress,isApplying:()=>manualApplying};
 })();
