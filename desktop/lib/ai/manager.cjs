@@ -28,7 +28,7 @@ class Manager{
    let route=routes[index];const cooldownKey=route.provider+this.account(route.provider);
    if((this.cooldowns.get(cooldownKey)||0)>Date.now()){error=new APIError('Лимит API: ожидается Retry-After для '+route.provider,429,this.cooldowns.get(cooldownKey)-Date.now(),{provider:route.provider,model:route.model});continue;}
    if(signal?.aborted)throw Error('Обработка ИИ отменена');
-   try{await this.guard(route,o,signal);if(o.autoModel||o.validateCatalog)route=await this.resolve(route,{...o,autoModel:o.autoModel&&route.provider===o.provider},signal,new Set([...attempted].filter(x=>x.startsWith(route.provider+'|')).map(x=>x.split('|')[1])));await this.guard(route,o,signal);}catch(e){error=e;onEvent({stage:'Маршрут отклонён',...route,details:e.details,message:e.message});continue;}
+   try{await this.guard({...route,model:o.autoModel||o.validateCatalog?'':route.model},o,signal);if(o.autoModel||o.validateCatalog)route=await this.resolve(route,{...o,autoModel:o.autoModel&&route.provider===o.provider},signal,new Set([...attempted].filter(x=>x.startsWith(route.provider+'|')).map(x=>x.split('|')[1])));await this.guard(route,o,signal);}catch(e){error=e;onEvent({stage:'Маршрут отклонён',...route,details:e.details,message:e.message});continue;}
    if(!route.model){error=Error('Укажите ID модели');continue;}const identity=route.provider+'|'+route.model;if(attempted.has(identity))continue;attempted.add(identity);
    const key={v:3,route:{provider:route.provider,model:route.model},account:this.account(route.provider),instruction,context};
    if(o.reusePlans){const hit=await this.replyCache.get(key);if(hit){validateReply?.(hit);onEvent({stage:'Кэш ответа ИИ',...route,cached:true,seconds:0});return{reply:hit,...route,cached:true};}}
