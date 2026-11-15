@@ -79,10 +79,17 @@ jobs:
             desktop-dist/*Source.zip
             desktop-dist/*Textures.zip
             desktop-dist/*.sha256
+            desktop-dist/FFmpeg-SOURCES.txt
             desktop-dist/desktop-smoke-*.json
             desktop-dist/studio3-smoke*
           if-no-files-found: error
           retention-days: 30
+      - name: Save UI verification separately
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: Studio3-UI-verification
+          path: desktop-dist/studio3-smoke*
+          if-no-files-found: error
       - name: Upload diagnostics after failure
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -106,20 +113,22 @@ jobs:
       - name: Publish verified installer
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: windows-v3-beta-${{ github.run_number }}
+          RELEASE_TAG: windows-v3-${{ github.run_number }}
         run: |
           cat > /tmp/vus-release-notes.md <<'NOTES'
           Windows 10/11 x64 installer for Video Unique Studio.
 
-          Includes application runtime, offline FFmpeg/FFprobe and 110 procedural textures. This is a development beta, not completion of the full 3.0 specification. See desktop/V3-STATUS.md for implemented functions and remaining limitations.
+          Includes application runtime, offline FFmpeg/FFprobe and 110 procedural textures. Version 3.0 adds timeline frame operations, editable multi-layer composition, texture generation, presets, batch export, similarity analysis and quality control. See desktop/USER-GUIDE.md and desktop/V3-STATUS.md for usage and limits. All media processing runs locally.
 
-          The installer was installed on a Windows runner and tested twice: bundled components and reuse, legacy native video/audio export, metadata cleanup, frame metrics, Chromium playback and reference deletion.
+          This exact installer was installed and exercised on a Windows runner: bundled components and reuse, legacy video/audio export, metadata cleanup, frame metrics, Chromium playback, and the 3.0 interface with five layers, interior frame editing, generator preview, preset save and final export. This is not a physical Ryzen/RX 570 or separate Windows 10 benchmark.
+
+          FFmpeg is distributed under GPLv3. The corresponding upstream FFmpeg snapshot is attached as FFmpeg-9.0.2-Source.zip; see FFmpeg-SOURCES.txt and the installed licenses for the build configuration and provider details.
 
           This build is not code-signed. Windows may display a publisher/reputation warning.
           NOTES
           if gh release view "$RELEASE_TAG" --repo hnsik/video-unique-studio >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --clobber
           else
-            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.0 beta — Windows x64" --notes-file /tmp/vus-release-notes.md --prerelease
+            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.0 — Windows x64" --notes-file /tmp/vus-release-notes.md
           fi
 
