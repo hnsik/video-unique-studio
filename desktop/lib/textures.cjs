@@ -14,6 +14,10 @@ function pixels(p,w,h,t=0){
  if(!Number.isInteger(w)||!Number.isInteger(h)||w<2||h<2||w*h>10000000)throw Error('Разрешение текстуры: от 2×2 до 10 млн пикселей');
  const out=Buffer.alloc(w*h*4),col=(p.color||'#aaccff').match(/[a-f0-9]{2}/gi)?.map(x=>parseInt(x,16))||[170,204,255],seed=p.seed>>>0;
  const kind=p.kind||'Gaussian Noise',grain=Math.max(1,p.grain||1),power=p.intensity??0.5,density=p.density??0.4;
+ const flag0=/Gaussian/.test(kind),flag1=/Perlin|Fractal|Surface|Blurred|Abstract Background|Animated Background/.test(kind),flag2=/Fractal/.test(kind),flag3=/Grain|Noise|Analog|VHS|Camera|Film Flicker|Vintage/.test(kind),flag4=/VHS|Analog|Camera/.test(kind),flag5=/Flicker/.test(kind),flag6=/Dust|Damage/.test(kind),flag7=/Scratches/.test(kind),flag8=/Light|Flare|Glow|Reflection|Highlight|Streak|Leak/.test(kind),flag9=/Gradient/.test(kind),flag10=/Streak/.test(kind),flag11=/Flare/.test(kind),flag12=/Dots|Shapes|Microgeometry/.test(kind),flag13=/Grid/.test(kind),flag14=/Lines|Scan|Stripes|Diagonal|Pattern|Waves|geometry/.test(kind),flag15=/Diagonal/.test(kind),flag16=/RGB/.test(kind),flag17=/Noise|Grain/.test(kind),flag18=/Gradient|Background|Transition|Light|Glow|Flare|Reflection|Highlight|Leak|Surface/.test(kind);
+ const gradients=new Map(),samplePerlin=(x,y,seed)=>{const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy,smooth=t=>t*t*t*(t*(t*6-15)+10),dot=(a,b)=>{const key=a+','+b+','+seed;let g=gradients.get(key);if(!g){const needsCell=!/Gaussian|RGB/.test(kind)&&/Grain|Noise|Analog|VHS|Camera|Film Flicker|Vintage|Dust|Damage/.test(kind);
+ const angle=lattice(a,b,seed)*Math.PI*2;g=[Math.cos(angle),Math.sin(angle)];gradients.set(key,g);}return g[0]*(x-a)+g[1]*(y-b);};const a=dot(ix,iy)*(1-smooth(fx))+dot(ix+1,iy)*smooth(fx),b=dot(ix,iy+1)*(1-smooth(fx))+dot(ix+1,iy+1)*smooth(fx);return 0.5+(a*(1-smooth(fy))+b*smooth(fy))*0.7;};
+ const needsCell=!/Gaussian|RGB/.test(kind)&&/Grain|Noise|Analog|VHS|Camera|Film Flicker|Vintage|Dust|Damage/.test(kind);
  const angle=(p.direction||0)*Math.PI/180,theta=2*Math.PI*t/(p.duration||4),speed=p.speed||1;
  const px=p.loop===false?t*speed:Math.sin(theta)*speed,py=p.loop===false?0:(1-Math.cos(theta))*speed;
  const dx=(px*Math.cos(angle)-py*Math.sin(angle))*0.1,dy=(px*Math.sin(angle)+py*Math.cos(angle))*0.1;
@@ -21,22 +25,22 @@ function pixels(p,w,h,t=0){
    const at=(a,b)=>{const u=Math.max(1e-9,lattice(a,b,seed+channel*193)),v=lattice(a,b,seed+channel*193+127);return gaussian?0.5+Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)*0.17:u;};
    const a=at(ix,iy)*(1-fx)+at(ix+1,iy)*fx,b=at(ix,iy+1)*(1-fx)+at(ix+1,iy+1)*fx;return a*(1-fy)+b*fy;};
  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-  const u=x/w+dx,v=y/h+dy,nx=(x+dx*w)/grain,ny=(y+dy*h)/grain,cell=noise(nx,ny);let n=0.5,a=p.alpha??1;
-  if(/Gaussian/.test(kind))n=noise(nx,ny,0,true);
-  else if(/Perlin|Fractal|Surface|Blurred|Abstract Background|Animated Background/.test(kind)){n=perlin(u*24/grain,v*24/grain,seed);if(/Fractal/.test(kind))n=(n+0.5*perlin(u*48/grain,v*48/grain,seed+1)+0.25*perlin(u*96/grain,v*96/grain,seed+2))/1.75;}
-  else if(/Grain|Noise|Analog|VHS|Camera|Film Flicker|Vintage/.test(kind)){n=cell;if(/VHS|Analog|Camera/.test(kind))n=n*0.7+(0.5+0.5*Math.sin(ny*2))*0.3;if(/Flicker/.test(kind))n*=0.8+0.2*Math.cos(theta);}
-  else if(/Dust|Damage/.test(kind)){n=cell>1-density*0.2?1:0;a*=n;}
-  else if(/Scratches/.test(kind)){n=noise(nx,0)>1-density*0.12?1:0;a*=n;}
-  else if(/Light|Flare|Glow|Reflection|Highlight|Streak|Leak/.test(kind)&&!/Gradient/.test(kind)){n=Math.exp(-((u-0.15-(seed%5)/10)**2+(v-0.4)**2)*(3+grain));if(/Streak/.test(kind))n=Math.exp(-((u-v-0.15)**2)*180/grain);if(/Flare/.test(kind))n+=Math.exp(-((u-0.7)**2+(v-0.75)**2)*100);}
-  else if(/Dots|Shapes|Microgeometry/.test(kind)){n=((nx%8-4)**2+(ny%8-4)**2)<Math.max(0.1,density*16)?1:0;a*=n;}
-  else if(/Grid/.test(kind)){n=((nx%8+8)%8)<density*3||((ny%8+8)%8)<density*3?1:0;a*=n;}
-  else if(/Lines|Scan|Stripes|Diagonal|Pattern|Waves|geometry/.test(kind)){n=0.5+Math.sin((/Diagonal/.test(kind)?nx+ny:ny)+Math.sin(u*8)*2)*0.5;}
+  const u=x/w+dx,v=y/h+dy,nx=(x+dx*w)/grain,ny=(y+dy*h)/grain,cell=needsCell?noise(nx,ny):0;let n=0.5,a=p.alpha??1;
+  if(flag0)n=noise(nx,ny,0,true);
+  else if(flag1){n=samplePerlin(u*24/grain,v*24/grain,seed);if(flag2)n=(n+0.5*samplePerlin(u*48/grain,v*48/grain,seed+1)+0.25*samplePerlin(u*96/grain,v*96/grain,seed+2))/1.75;}
+  else if(flag3){n=cell;if(flag4)n=n*0.7+(0.5+0.5*Math.sin(ny*2))*0.3;if(flag5)n*=0.8+0.2*Math.cos(theta);}
+  else if(flag6){n=cell>1-density*0.2?1:0;a*=n;}
+  else if(flag7){n=noise(nx,0)>1-density*0.12?1:0;a*=n;}
+  else if(flag8&&!flag9){n=Math.exp(-((u-0.15-(seed%5)/10)**2+(v-0.4)**2)*(3+grain));if(flag10)n=Math.exp(-((u-v-0.15)**2)*180/grain);if(flag11)n+=Math.exp(-((u-0.7)**2+(v-0.75)**2)*100);}
+  else if(flag12){n=((nx%8-4)**2+(ny%8-4)**2)<Math.max(0.1,density*16)?1:0;a*=n;}
+  else if(flag13){n=((nx%8+8)%8)<density*3||((ny%8+8)%8)<density*3?1:0;a*=n;}
+  else if(flag14){n=0.5+Math.sin((flag15?nx+ny:ny)+Math.sin(u*8)*2)*0.5;}
   else n=clamp((u*Math.cos(angle)+v*Math.sin(angle)+1)/2,0,1);
   for(let c=0;c<3;c++){
-   let value=/RGB/.test(kind)?noise(nx,ny,c+1):n;
-   if(/Noise|Grain/.test(kind))value=0.5+(value-0.5)*Math.sqrt(Math.max(0,density));
+   let value=flag16?noise(nx,ny,c+1):n;
+   if(flag17)value=0.5+(value-0.5)*Math.sqrt(Math.max(0,density));
    value=clamp((value-0.5)*(p.contrast??1)+0.5+(p.brightness??0),0,1);
-   if(/Gradient|Background|Transition|Light|Glow|Flare|Reflection|Highlight|Leak|Surface/.test(kind))value*=col[c]/255*power;
+   if(flag18)value*=col[c]/255*power;
    else value=0.5+(value-0.5)*power;
    value=clamp(value*(0.91+(seed%89)/1000),0,1);out[(y*w+x)*4+c]=Math.round(value*255);
   }

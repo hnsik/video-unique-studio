@@ -17,9 +17,9 @@ function sourceTime(time, timeline, rate=1) {
  for(const s of timeline){last=s;if(t<s.outputStart+s.end-s.start)return s.hold?s.start:s.start+Math.max(0,t-s.outputStart);}
  return last?last.hold?last.start:last.end:time*rate;
 }
-function compile(graph, timeline, fps, audio, offset=0) {
+function compile(graph, timeline, fps, audio, offset=0, videoInput='0:v') {
  if(!timeline.length)throw Error('Пустая шкала');
- graph.push(`[0:v]setpts=PTS-STARTPTS,fps=${fps},split=${timeline.length}${timeline.map((_,i)=>`[ev${i}]`).join('')}`);
+ graph.push(`[${videoInput}]setpts=PTS-STARTPTS,fps=${fps},split=${timeline.length}${timeline.map((_,i)=>`[ev${i}]`).join('')}`);
  if(audio){const delay=offset>0?`,adelay=${Math.round(offset*1000)}:all=1`:offset<0?`,atrim=start=${-offset},asetpts=PTS-STARTPTS`:'';graph.push(`[0:a]asetpts=PTS-STARTPTS${delay},apad,asplit=${timeline.length}${timeline.map((_,i)=>`[ea${i}]`).join('')}`);}
  const inputs=[];
  timeline.forEach((s,i)=>{

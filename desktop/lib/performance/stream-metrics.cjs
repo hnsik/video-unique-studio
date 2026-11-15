@@ -1,0 +1,1 @@
+'use strict';const{parentPort}=require('node:worker_threads'),{metrics}=require('../studio3.cjs');parentPort.on('message',m=>{try{parentPort.postMessage({result:metrics(m.a,m.b,m.w,m.h)});}catch(e){parentPort.postMessage({error:e.message});}});

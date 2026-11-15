@@ -181,7 +181,7 @@ async function start() {
       if(url.pathname.startsWith('/media/')) file=await studio3.media(url.pathname.slice(7));
       else if(url.pathname.startsWith('/v3/')) {
         const name=url.pathname.slice(4);
-        if(!['index.html','app.js','texture-analyzer.js','ai.js','style.css'].includes(name))throw Error('Invalid asset');
+        if(!['index.html','app.js','texture-analyzer.js','ai.js','performance.js','style.css'].includes(name))throw Error('Invalid asset');
         file=path.join(__dirname,'v3',name);
       } else file=safeAsset(request.url);
       if(!file)throw Error('Missing media');
