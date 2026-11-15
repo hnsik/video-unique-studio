@@ -21,5 +21,24 @@ test('rejected candidates retain reasons and playable fragments without replacin
  assert.equal(item.variants.length,3);assert.ok(item.variants.every(v=>v.issues.some(i=>i.code==='black')));
  for(const v of item.variants){const file=s.outputs.get(v.previewId);assert.ok(file);assert.ok((await s.probe(file)).streams.some(x=>x.codec_type==='video'));}
  assert.doesNotMatch(item.error,/Попробуйте лёгкую/);
+ await assert.rejects(ai.applyCandidate({jobId:ai.jobs[0].id,sourceId:source.id,candidateId:item.variants[0].id,acceptWarnings:true}),/технические/);
+ assert.equal(s.state.aiResults[source.id].id,'previous');
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});
+test('manual choice accepts SSIM warnings, persists exact candidate and exports without another AI call',async()=>{
+ const{root,s,source}=await fixture();try{
+ const ai=await new AIEngine(s,{status:()=>({}),get:()=>null}).init(),original=ai.trial.bind(ai);
+ ai.trial=async(...args)=>{const r=await original(...args);if(args[3]){r.analysis.ssim.mean=.5;r.newBlack=false;r.newFlicker=false;r.audioClipping=false;}return r;};
+ ai.start({ids:[source.id],settings:DEFAULT,options:{provider:'local',profile:'light'}});await s.taskChain;
+ const job=ai.jobs[0],item=job.items[0],v=item.variants[0],args={jobId:job.id,sourceId:source.id,candidateId:v.id};
+ assert.equal(item.status,'error');assert.ok(v.issues.some(i=>i.code==='ssim'));
+ await assert.rejects(ai.applyCandidate(args),/Подтвердите/);assert.equal(s.state.aiResults?.[source.id],undefined);
+ await assert.rejects(ai.applyCandidate({...args,candidateId:'invented',acceptWarnings:true}),/недоступен/);
+ const before=await s.hash(source.path),r=await ai.applyCandidate({...args,acceptWarnings:true});
+ assert.equal(r.manualSelection,true);assert.equal(r.finalCheck,null);assert.equal(r.selectedCandidateId,v.id);
+ assert.deepEqual(r.settings,{...v.settings,aiLocked:true});assert.ok(r.acceptedIssues.some(i=>i.code==='ssim'));
+ const reopened=new Studio({root,tools:s.tools});await reopened.init();assert.equal(reopened.state.aiResults[source.id].selectedCandidateId,v.id);
+ const out=await s.process({source,settings:r.settings,folder:root,index:1});assert.deepEqual(out.report.settings.layers,r.settings.layers);
+ assert.equal(out.report.settings.seed,r.settings.seed);assert.equal(await s.hash(source.path),before);
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });

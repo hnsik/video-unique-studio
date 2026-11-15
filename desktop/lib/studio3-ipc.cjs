@@ -34,6 +34,7 @@ function register({handle,dialog,shell,getWindow,getTools,root,resultsRoot,selfT
  case 'aiKey':return s.ai.vault.set(data.provider,data.key);
  case 'aiConnection':return s.ai.connection();
  case 'aiStart':return s.ai.start(data);
+ case 'aiApplyCandidate':return s.ai.applyCandidate(data);
  case 'aiStatus':return s.ai.snapshot();
  case 'aiCancel':s.ai.cancel(data.id);return true;
  case 'aiClear':delete s.state.aiResults?.[data.id];await s.save();return true;
