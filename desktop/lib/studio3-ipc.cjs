@@ -4,10 +4,21 @@ const cache=require('./cache.cjs'),timeline=require('./timeline.cjs');
 const path=require('node:path'),fs=require('node:fs/promises'),{randomUUID}=require('node:crypto');
 function register({handle,dialog,shell,getWindow,getTools,root,resultsRoot,selfTest=false,finishTest}){
  let studioPromise;const folders=new Set([resultsRoot]);
- const studio=async()=>{if(!studioPromise)studioPromise=(async()=>{const s=new Studio({tools:getTools(),root,onEvent:value=>getWindow()?.webContents.send('studio3:update',value)});await s.init();for(const j of s.queue)folders.add(j.folder);if(s.state.outputFolder)folders.add(s.state.outputFolder);return s;})();return studioPromise;};
+ const studio=async()=>{if(!studioPromise)studioPromise=(async()=>{const s=new Studio({tools:getTools(),root,onEvent:value=>getWindow()?.webContents.send('studio3:update',value)});await s.init();s.textureAnalyzer=await new (require('./texture-analyzer.cjs').TextureAnalyzer)(s).init();for(const j of s.queue)folders.add(j.folder);if(s.state.outputFolder)folders.add(s.state.outputFolder);return s;})();return studioPromise;};
  handle('studio3:call',async(_e,action,data={})=>{const s=await studio();
  const execute=async()=>{switch(action){
- case 'init':return{...s.snapshot(),defaults:DEFAULT,layerDefaults:LAYER,kinds,folder:s.state.outputFolder||resultsRoot,selfTest};
+ case 'init':return{...s.snapshot(),defaults:DEFAULT,layerDefaults:LAYER,kinds,folder:s.state.outputFolder||resultsRoot,textureTests:s.textureAnalyzer.snapshot(),vmaf:s.textureAnalyzer.vmaf,selfTest};
+ case 'textureTestStart':return s.textureAnalyzer.start(data);
+ case 'textureTestStatus':return s.textureAnalyzer.snapshot();
+ case 'textureTestCancel':s.textureAnalyzer.cancel(data.id);return true;
+ case 'textureTestRetry':return s.textureAnalyzer.retry(data.id);
+ case 'textureTestHistory':return s.textureAnalyzer.list(String(data.search||'').slice(0,200));
+ case 'textureTestGet':{const r=s.textureAnalyzer.get(data.id);for(const p of Object.values(r.comparisons))for(const sample of p.samples)for(const kind of Object.keys(sample.images)){const id=randomUUID();s.outputs.set(id,sample.images[kind]);sample.images[kind]='vus://studio/media/'+id;}return r;}
+ case 'textureTestSave':return s.textureAnalyzer.save(data.id);
+ case 'textureTestDelete':await s.textureAnalyzer.remove(data.id);return true;
+ case 'textureTestSuggest':return s.textureAnalyzer.suggest(data.ids,data.constraints,data.mode);
+ case 'textureTestRepeat':{const r=s.textureAnalyzer.get(data.id);let source=s.assets.get(r.source.id);if(!source){[source]=await s.importVideo([r.source.path]);}return s.textureAnalyzer.start({sourceId:source.id,config:r.config,candidates:[{name:r.name,layers:r.layers}],force:true});}
+ case 'textureTestExport':{if(!['json','csv','html','pdf'].includes(data.format)||!Array.isArray(data.ids)||!data.ids.length||data.ids.length>110)throw Error('Неверный запрос отчёта');const records=data.ids.map(id=>s.textureAnalyzer.get(id)),reporter=require('./texture-reports.cjs');let file;if(selfTest&&data.testFile)file=path.join(root,'texture-report.'+data.format);else{const choice=await dialog.showSaveDialog(getWindow(),{defaultPath:'Texture-analysis.'+data.format,filters:[{name:data.format.toUpperCase(),extensions:[data.format]}]});if(choice.canceled)return null;file=choice.filePath;}if(data.format==='json')await fs.writeFile(file,JSON.stringify(records,null,2));else if(data.format==='csv')await fs.writeFile(file,reporter.csv(records));else{const html=await reporter.html(records);if(data.format==='html')await fs.writeFile(file,html);else{const {BrowserWindow}=require('electron'),w=new BrowserWindow({show:false,webPreferences:{sandbox:true,nodeIntegration:false,contextIsolation:true,javascript:false}});try{await w.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent(html));const pdf=await w.webContents.printToPDF({printBackground:true,preferCSSPageSize:true});await fs.writeFile(file,pdf);}finally{w.destroy();}}}return{path:file,bytes:(await fs.stat(file)).size};}
  case 'testFixture':{if(!selfTest)throw Error('Тестовый режим отключён');const file=path.join(root,'fixture.mp4');await s.run(s.tools.ffmpeg,['-v','error','-y','-f','lavfi','-i','testsrc2=s=160x120:r=12:d=1','-f','lavfi','-i','sine=frequency=440:duration=1','-c:v','libx264','-pix_fmt','yuv420p','-c:a','aac','-shortest',file]);return s.importVideo([file]);}
  case 'testFinish':{if(!selfTest)throw Error('Тестовый режим отключён');return finishTest(data);}
  case 'import':{const choice=await dialog.showOpenDialog(getWindow(),{title:data.texture?'Импорт текстур':'Импорт видео',properties:['openFile','multiSelections'],filters:[{name:'Медиа',extensions:data.texture?['png','jpg','jpeg','webp','bmp','tif','tiff','mp4','mov','webm']:['mp4','mov','mkv','webm','avi','m4v']}]});if(choice.canceled)return[];return data.texture?s.importTextures(choice.filePaths,String(data.category||'Мои текстуры')):s.importVideo(choice.filePaths);}
@@ -44,7 +55,7 @@ function register({handle,dialog,shell,getWindow,getTools,root,resultsRoot,selfT
  case 'licenses':return shell.openPath(path.join(path.dirname(s.tools.ffmpeg),'SOURCE-AND-LICENSE.txt'));
  case 'openResults':return shell.openPath([...folders].includes(data.folder)?data.folder:resultsRoot);
  default:throw Error('Неизвестное действие');
- }};const heavy=['proxy','preview','analyze','textureExport','animationExport','cacheClear','cacheBudget','generatorPreview','generate'];return heavy.includes(action)?s.exclusive(action,execute):execute();});
- return{async media(id){const s=await studio();const a=s.assets.get(id),builtin=catalog.find(t=>t.id===id);return a?.path||s.outputs.get(id)||(builtin&&path.join(__dirname,'../assets/textures',builtin.category,id+'.png'));},async close(){if(studioPromise){const s=await studioPromise;s.closing=true;s.cancel();await s.taskChain;await s.save();}}};
+ }};const heavy=['proxy','preview','analyze','textureExport','animationExport','cacheClear','cacheBudget','generatorPreview','generate','textureTestExport'];return heavy.includes(action)?s.exclusive(action,execute):execute();});
+ return{async media(id){const s=await studio();const a=s.assets.get(id),builtin=catalog.find(t=>t.id===id);return a?.path||s.outputs.get(id)||(builtin&&path.join(__dirname,'../assets/textures',builtin.category,id+'.png'));},async close(){if(studioPromise){const s=await studioPromise;s.closing=true;s.cancel();await s.taskChain;await s.save();s.textureAnalyzer?.close();}}};
 }
 module.exports={register};
