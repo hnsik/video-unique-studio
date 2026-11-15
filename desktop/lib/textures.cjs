@@ -12,26 +12,38 @@ function lattice(x,y,seed){let n=Math.imul(x,374761393)+Math.imul(y,668265263)+s
 function perlin(x,y,seed){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;const smooth=t=>t*t*t*(t*(t*6-15)+10),dot=(a,b)=>{const angle=lattice(a,b,seed)*Math.PI*2;return Math.cos(angle)*(x-a)+Math.sin(angle)*(y-b);};const a=dot(ix,iy)*(1-smooth(fx))+dot(ix+1,iy)*smooth(fx),b=dot(ix,iy+1)*(1-smooth(fx))+dot(ix+1,iy+1)*smooth(fx);return 0.5+(a*(1-smooth(fy))+b*smooth(fy))*0.7;}
 function pixels(p,w,h,t=0){
  if(!Number.isInteger(w)||!Number.isInteger(h)||w<2||h<2||w*h>10000000)throw Error('Разрешение текстуры: от 2×2 до 10 млн пикселей');
- const out=Buffer.alloc(w*h*4),rnd=random(p.seed),col=(p.color||'#aaccff').match(/[a-f0-9]{2}/gi)?.map(x=>parseInt(x,16))||[170,204,255];
+ const out=Buffer.alloc(w*h*4),col=(p.color||'#aaccff').match(/[a-f0-9]{2}/gi)?.map(x=>parseInt(x,16))||[170,204,255],seed=p.seed>>>0;
  const kind=p.kind||'Gaussian Noise',grain=Math.max(1,p.grain||1),power=p.intensity??0.5,density=p.density??0.4;
- const phase=(p.loop===false?t*(p.speed||1):Math.sin(t/(p.duration||4)*Math.PI*2)*(p.speed||1)),angle=(p.direction||0)*Math.PI/180,dx=phase*Math.cos(angle),dy=phase*Math.sin(angle);
+ const angle=(p.direction||0)*Math.PI/180,theta=2*Math.PI*t/(p.duration||4),speed=p.speed||1;
+ const px=p.loop===false?t*speed:Math.sin(theta)*speed,py=p.loop===false?0:(1-Math.cos(theta))*speed;
+ const dx=(px*Math.cos(angle)-py*Math.sin(angle))*0.1,dy=(px*Math.sin(angle)+py*Math.cos(angle))*0.1;
+ const noise=(x,y,channel=0,gaussian=false)=>{const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
+   const at=(a,b)=>{const u=Math.max(1e-9,lattice(a,b,seed+channel*193)),v=lattice(a,b,seed+channel*193+127);return gaussian?0.5+Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)*0.17:u;};
+   const a=at(ix,iy)*(1-fx)+at(ix+1,iy)*fx,b=at(ix,iy+1)*(1-fx)+at(ix+1,iy+1)*fx;return a*(1-fy)+b*fy;};
  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-  let u=x/w+dx,v=y/h+dy,n=0.5,a=p.alpha??1;const cell=lattice(Math.floor(x/grain),Math.floor(y/grain),p.seed||1);
-  if(/Gaussian/.test(kind))n=0.5+Math.sqrt(-2*Math.log(Math.max(rnd(),1e-9)))*Math.cos(2*Math.PI*rnd())*0.17;
-  else if(/Perlin|Fractal|Surface|Blurred|Abstract Background|Animated Background/.test(kind)){n=perlin(u*8,v*8,p.seed);if(/Fractal/.test(kind))n=(n+0.5*perlin(u*16,v*16,p.seed+1)+0.25*perlin(u*32,v*32,p.seed+2))/1.75;}
-  else if(/Grain|Noise|Analog|VHS|Camera|Film Flicker/.test(kind))n=cell*(0.7+0.3*Math.cos(phase*6+(x+y)/grain));
-  else if(/Dust|Damage/.test(kind)){n=cell>1-density*0.04?1:0;a*=n;}
-  else if(/Scratches/.test(kind)){n=lattice(Math.floor(x/grain),0,p.seed)>1-density*0.05?1:0;a*=n;}
-  else if(/Light|Flare|Glow|Reflection|Highlight|Streak|Leak/.test(kind)){n=Math.exp(-((u-0.15-(p.seed%5)/10)**2+(v-0.4)**2)*8);if(/Streak/.test(kind))n=Math.exp(-((u-v-0.15)**2)*180);}
-  else if(/Dots|Shapes|Microgeometry/.test(kind)){n=((x%(grain*8)-grain*4)**2+(y%(grain*8)-grain*4)**2)<grain*grain*4?1:0;a*=n;}
-  else if(/Grid/.test(kind)){n=x%(grain*8)<grain||y%(grain*8)<grain?1:0;a*=n;}
-  else if(/Lines|Scan|Stripes|Diagonal|Pattern|Waves|geometry/.test(kind)){n=0.5+Math.sin((/Diagonal/.test(kind)?x+y:y)/grain+Math.sin(u*8)*2+phase*6)*0.5;}
-  else n=(u*Math.cos(angle)+v*Math.sin(angle)+1)%1;
-  n=clamp((n-0.5)*(p.contrast??1)+0.5+(p.brightness??0),0,1);
-  for(let c=0;c<3;c++){let value=/RGB/.test(kind)?rnd():n;if(/Gradient|Background|Transition|Light|Glow|Flare|Reflection|Highlight|Leak|Surface/.test(kind))value*=col[c]/255;else value=0.5+(value-0.5)*power;value=clamp(value*(0.91+(p.seed%89)/1000),0,1);out[(y*w+x)*4+c]=clamp(Math.round(value*255));}
-  out[(y*w+x)*4+3]=clamp(Math.round(a*255));
+  const u=x/w+dx,v=y/h+dy,nx=(x+dx*w)/grain,ny=(y+dy*h)/grain,cell=noise(nx,ny);let n=0.5,a=p.alpha??1;
+  if(/Gaussian/.test(kind))n=noise(nx,ny,0,true);
+  else if(/Perlin|Fractal|Surface|Blurred|Abstract Background|Animated Background/.test(kind)){n=perlin(u*24/grain,v*24/grain,seed);if(/Fractal/.test(kind))n=(n+0.5*perlin(u*48/grain,v*48/grain,seed+1)+0.25*perlin(u*96/grain,v*96/grain,seed+2))/1.75;}
+  else if(/Grain|Noise|Analog|VHS|Camera|Film Flicker|Vintage/.test(kind)){n=cell;if(/VHS|Analog|Camera/.test(kind))n=n*0.7+(0.5+0.5*Math.sin(ny*2))*0.3;if(/Flicker/.test(kind))n*=0.8+0.2*Math.cos(theta);}
+  else if(/Dust|Damage/.test(kind)){n=cell>1-density*0.2?1:0;a*=n;}
+  else if(/Scratches/.test(kind)){n=noise(nx,0)>1-density*0.12?1:0;a*=n;}
+  else if(/Light|Flare|Glow|Reflection|Highlight|Streak|Leak/.test(kind)&&!/Gradient/.test(kind)){n=Math.exp(-((u-0.15-(seed%5)/10)**2+(v-0.4)**2)*(3+grain));if(/Streak/.test(kind))n=Math.exp(-((u-v-0.15)**2)*180/grain);if(/Flare/.test(kind))n+=Math.exp(-((u-0.7)**2+(v-0.75)**2)*100);}
+  else if(/Dots|Shapes|Microgeometry/.test(kind)){n=((nx%8-4)**2+(ny%8-4)**2)<Math.max(0.1,density*16)?1:0;a*=n;}
+  else if(/Grid/.test(kind)){n=((nx%8+8)%8)<density*3||((ny%8+8)%8)<density*3?1:0;a*=n;}
+  else if(/Lines|Scan|Stripes|Diagonal|Pattern|Waves|geometry/.test(kind)){n=0.5+Math.sin((/Diagonal/.test(kind)?nx+ny:ny)+Math.sin(u*8)*2)*0.5;}
+  else n=clamp((u*Math.cos(angle)+v*Math.sin(angle)+1)/2,0,1);
+  for(let c=0;c<3;c++){
+   let value=/RGB/.test(kind)?noise(nx,ny,c+1):n;
+   if(/Noise|Grain/.test(kind))value=0.5+(value-0.5)*Math.sqrt(Math.max(0,density));
+   value=clamp((value-0.5)*(p.contrast??1)+0.5+(p.brightness??0),0,1);
+   if(/Gradient|Background|Transition|Light|Glow|Flare|Reflection|Highlight|Leak|Surface/.test(kind))value*=col[c]/255*power;
+   else value=0.5+(value-0.5)*power;
+   value=clamp(value*(0.91+(seed%89)/1000),0,1);out[(y*w+x)*4+c]=Math.round(value*255);
+  }
+  out[(y*w+x)*4+3]=Math.round(clamp(a,0,1)*255);
  }return out;
 }
+
 const table=Array.from({length:256},(_,n)=>{for(let k=0;k<8;k++)n=n&1?0xedb88320^(n>>>1):n>>>1;return n>>>0;});
 function crc(buf){let n=0xffffffff;for(const b of buf)n=table[(n^b)&255]^(n>>>8);return(n^0xffffffff)>>>0;}
 function chunk(type,data){const head=Buffer.from(type),len=Buffer.alloc(4),tail=Buffer.alloc(4);len.writeUInt32BE(data.length);tail.writeUInt32BE(crc(Buffer.concat([head,data])));return Buffer.concat([len,head,data,tail]);}
