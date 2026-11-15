@@ -11,3 +11,15 @@ test('running cancellation terminates local processing and keeps previous settin
 test('API outage runs explicitly labelled local fallback; disabled fallback leaves settings unchanged',async()=>{const{root,s,source}=await fixture();try{const ai=await new AIEngine(s,{status:()=>({groq:true}),get:()=> 'secret'},{catalogImpl:async()=>[{id:'openai/gpt-oss-20b',compatible:true}],requestImpl:async()=>{throw Error('Лимит бесплатного API исчерпан');}}).init();let id=ai.start({ids:[source.id],settings:DEFAULT,options:{provider:'groq',freeAccount:true,fallback:false,profile:'light'}});await s.taskChain;assert.equal(ai.jobs.find(j=>j.id===id).status,'error');assert.equal(s.state.aiResults?.[source.id],undefined);id=ai.start({ids:[source.id],settings:DEFAULT,options:{provider:'groq',freeAccount:true,fallback:true,profile:'light'}});await s.taskChain;const j=ai.jobs.find(j=>j.id===id);assert.equal(j.status,'done',JSON.stringify(j.items));assert.equal(j.items[0].result.provider,'local');assert.match(j.items[0].result.warning,/Лимит/);}finally{await fs.rm(root,{recursive:true,force:true});}});
 
 test('quality selection does not count encoding-only differences as applied effects',()=>{const r={analysis:{mae:{mean:3},ssim:{mean:0.99}},controlAnalysis:{mae:{mean:0}},newBlack:false,newFlicker:false,audioClipping:false};assert.equal(eligible(r,PROFILES.light),false);r.controlAnalysis.mae.mean=1;assert.equal(eligible(r,PROFILES.light),true);r.analysis.ssim.mean=0.5;assert.equal(eligible(r,PROFILES.light),false);});
+test('rejected candidates retain reasons and playable fragments without replacing saved result',async()=>{
+ const{root,s,source}=await fixture();try{
+ const ai=await new AIEngine(s,{status:()=>({}),get:()=>null}).init(),original=ai.trial.bind(ai);
+ ai.trial=async(...args)=>{const r=await original(...args);if(args[3])r.newBlack=true;return r;};
+ s.state.aiResults={[source.id]:{id:'previous'}};
+ ai.start({ids:[source.id],settings:DEFAULT,options:{provider:'local',profile:'strong',audioAllowed:false}});await s.taskChain;
+ const item=ai.jobs[0].items[0];assert.equal(item.status,'error');assert.equal(s.state.aiResults[source.id].id,'previous');
+ assert.equal(item.variants.length,3);assert.ok(item.variants.every(v=>v.issues.some(i=>i.code==='black')));
+ for(const v of item.variants){const file=s.outputs.get(v.previewId);assert.ok(file);assert.ok((await s.probe(file)).streams.some(x=>x.codec_type==='video'));}
+ assert.doesNotMatch(item.error,/Попробуйте лёгкую/);
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});

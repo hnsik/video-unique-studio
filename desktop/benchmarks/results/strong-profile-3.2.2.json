@@ -1,0 +1,2027 @@
+{
+  "fixture": "FFmpeg testsrc2 320x180, 24 fps, 3 s; sine 440 Hz; libx264 CRF18/AAC",
+  "seed": 123,
+  "note": "Synthetic local-plan test, not real API generation. Timings omitted: concurrent test activity. MAE uses 0..255 pixels.",
+  "results": [
+    {
+      "version": "3.2.1",
+      "status": "done",
+      "tests": [
+        {
+          "id": "candidate-1",
+          "eligible": true,
+          "mae": 2.270405092592592,
+          "measurements": [
+            {
+              "analysis": {
+                "mode": "sampled",
+                "samples": [
+                  {
+                    "frame": 7,
+                    "time": 0.2916666666666667,
+                    "sourceTime": 0.2916666666666667,
+                    "mae": 2.870978009259259,
+                    "maxDeviation": 76,
+                    "ssim": 0.9931480304739277,
+                    "psnr": 33.733449068055315,
+                    "pHashDistance": 0
+                  },
+                  {
+                    "frame": 21,
+                    "time": 0.875,
+                    "sourceTime": 0.875,
+                    "mae": 2.8102488425925927,
+                    "maxDeviation": 89,
+                    "ssim": 0.9934383424894412,
+                    "psnr": 33.85116184421659,
+                    "pHashDistance": 2
+                  },
+                  {
+                    "frame": 35,
+                    "time": 1.4583333333333333,
+                    "sourceTime": 1.4583333333333333,
+                    "mae": 2.8750810185185185,
+                    "maxDeviation": 59,
+                    "ssim": 0.9935674413653438,
+                    "psnr": 33.8707619281799,
+                    "pHashDistance": 2
+                  }
+                ],
+                "unmatchedTailSeconds": 0,
+                "sampleCount": 3,
+                "framesChecked": 3,
+                "resolution": {
+                  "width": 320,
+                  "height": 180
+                },
+                "fps": 24,
+                "perFrameReport": "/tmp/vus-strong-rXqKAh/full-analysis-1794770720810.jsonl",
+                "mae": {
+                  "mean": 2.85210262345679,
+                  "min": 2.8102488425925927,
+                  "max": 2.8750810185185185
+                },
+                "ssim": {
+                  "mean": 0.9933846047762377,
+                  "min": 0.9931480304739277,
+                  "max": 0.9935674413653438
+                },
+                "psnr": {
+                  "mean": 33.818457613483936,
+                  "min": 33.733449068055315,
+                  "max": 33.8707619281799
+                },
+                "maxPixelDeviation": {
+                  "mean": 74.66666666666667,
+                  "min": 59,
+                  "max": 89
+                },
+                "pHashDistance": {
+                  "mean": 1.3333333333333333,
+                  "min": 0,
+                  "max": 2
+                },
+                "audio": {
+                  "available": true,
+                  "seconds": 2,
+                  "pearson": 0.9999985506121403,
+                  "normalizedMAE": 9.72309112548828e-05,
+                  "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+                },
+                "sha256Source": "c78845d7220de3252355a5d969b5754251893a778c9c36380058114d7673d326",
+                "sha256Output": "81bea949fd20ea899d44b6fc44cece3e19019eeca20a05424c43a33a14fee284",
+                "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+                "vmaf": {
+                  "available": false,
+                  "reason": "Сборка FFmpeg без libvmaf"
+                }
+              },
+              "controlAnalysis": {
+                "mode": "sampled",
+                "samples": [
+                  {
+                    "frame": 7,
+                    "time": 0.2916666666666667,
+                    "sourceTime": 0.2916666666666667,
+                    "mae": 2.276759259259259,
+                    "maxDeviation": 64,
+                    "ssim": 0.9929376211486138,
+                    "psnr": 35.23228548409967,
+                    "pHashDistance": 0
+                  },
+                  {
+                    "frame": 21,
+                    "time": 0.875,
+                    "sourceTime": 0.875,
+                    "mae": 2.2614930555555555,
+                    "maxDeviation": 76,
+                    "ssim": 0.9925943199227842,
+                    "psnr": 34.9833511329987,
+                    "pHashDistance": 2
+                  },
+                  {
+                    "frame": 35,
+                    "time": 1.4583333333333333,
+                    "sourceTime": 1.4583333333333333,
+                    "mae": 2.272962962962963,
+                    "maxDeviation": 65,
+                    "ssim": 0.992400289132916,
+                    "psnr": 35.478791590085876,
+                    "pHashDistance": 2
+                  }
+                ],
+                "unmatchedTailSeconds": 0,
+                "sampleCount": 3,
+                "framesChecked": 3,
+                "resolution": {
+                  "width": 320,
+                  "height": 180
+                },
+                "fps": 24,
+                "perFrameReport": "/tmp/vus-strong-rXqKAh/full-analysis-1794770721274.jsonl",
+                "mae": {
+                  "mean": 2.270405092592592,
+                  "min": 2.2614930555555555,
+                  "max": 2.276759259259259
+                },
+                "ssim": {
+                  "mean": 0.9926440767347714,
+                  "min": 0.992400289132916,
+                  "max": 0.9929376211486138
+                },
+                "psnr": {
+                  "mean": 35.231476069061415,
+                  "min": 34.9833511329987,
+                  "max": 35.478791590085876
+                },
+                "maxPixelDeviation": {
+                  "mean": 68.33333333333333,
+                  "min": 64,
+                  "max": 76
+                },
+                "pHashDistance": {
+                  "mean": 1.3333333333333333,
+                  "min": 0,
+                  "max": 2
+                },
+                "audio": {
+                  "available": true,
+                  "seconds": 2,
+                  "pearson": 1,
+                  "normalizedMAE": 0,
+                  "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+                },
+                "sha256Source": "96f9fc3955cc4b4f71fb086fb9097a6e0fcc60a8503505e6a81417a8b58492d1",
+                "sha256Output": "81bea949fd20ea899d44b6fc44cece3e19019eeca20a05424c43a33a14fee284",
+                "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+                "vmaf": {
+                  "available": false,
+                  "reason": "Сборка FFmpeg без libvmaf"
+                }
+              },
+              "audio": {
+                "available": true,
+                "meanDb": -21.1,
+                "peakDb": -17.7,
+                "scope": "первые 15 секунд"
+              },
+              "qc": {
+                "blackIntervals": [],
+                "luminanceJumps": 0,
+                "note": "Резкие изменения яркости могут быть монтажными склейками или намеренными эффектами."
+              }
+            }
+          ]
+        },
+        {
+          "id": "candidate-2",
+          "eligible": true,
+          "mae": 2.8808757716049382,
+          "measurements": [
+            {
+              "analysis": {
+                "mode": "sampled",
+                "samples": [
+                  {
+                    "frame": 7,
+                    "time": 0.2916666666666667,
+                    "sourceTime": 0.2916666666666667,
+                    "mae": 3.56796875,
+                    "maxDeviation": 80,
+                    "ssim": 0.9911730949068842,
+                    "psnr": 32.28602226203317,
+                    "pHashDistance": 0
+                  },
+                  {
+                    "frame": 21,
+                    "time": 0.875,
+                    "sourceTime": 0.875,
+                    "mae": 3.3810185185185184,
+                    "maxDeviation": 77,
+                    "ssim": 0.9923928507127758,
+                    "psnr": 32.78842955688553,
+                    "pHashDistance": 0
+                  },
+                  {
+                    "frame": 35,
+                    "time": 1.4583333333333333,
+                    "sourceTime": 1.4583333333333333,
+                    "mae": 3.534542824074074,
+                    "maxDeviation": 87,
+                    "ssim": 0.9923652490225304,
+                    "psnr": 32.542632885883016,
+                    "pHashDistance": 2
+                  }
+                ],
+                "unmatchedTailSeconds": 0,
+                "sampleCount": 3,
+                "framesChecked": 3,
+                "resolution": {
+                  "width": 320,
+                  "height": 180
+                },
+                "fps": 24,
+                "perFrameReport": "/tmp/vus-strong-rXqKAh/full-analysis-1794770722938.jsonl",
+                "mae": {
+                  "mean": 3.494510030864197,
+                  "min": 3.3810185185185184,
+                  "max": 3.56796875
+                },
+                "ssim": {
+                  "mean": 0.9919770648807301,
+                  "min": 0.9911730949068842,
+                  "max": 0.9923928507127758
+                },
+                "psnr": {
+                  "mean": 32.53902823493391,
+                  "min": 32.28602226203317,
+                  "max": 32.78842955688553
+                },
+                "maxPixelDeviation": {
+                  "mean": 81.33333333333333,
+                  "min": 77,
+                  "max": 87
+                },
+                "pHashDistance": {
+                  "mean": 0.6666666666666666,
+                  "min": 0,
+                  "max": 2
+                },
+                "audio": {
+                  "available": true,
+                  "seconds": 2,
+                  "pearson": 0.9999985506121403,
+                  "normalizedMAE": 9.72309112548828e-05,
+                  "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+                },
+                "sha256Source": "c78845d7220de3252355a5d969b5754251893a778c9c36380058114d7673d326",
+                "sha256Output": "bb1209c976626e7d239ab3d7c7455fe751d782cbe2e50be0ec90148cd56ba44f",
+                "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+                "vmaf": {
+                  "available": false,
+                  "reason": "Сборка FFmpeg без libvmaf"
+                }
+              },
+              "controlAnalysis": {
+                "mode": "sampled",
+                "samples": [
+                  {
+                    "frame": 7,
+                    "time": 0.2916666666666667,
+                    "sourceTime": 0.2916666666666667,
+                    "mae": 2.9271875,
+                    "maxDeviation": 73,
+                    "ssim": 0.9909871244266631,
+                    "psnr": 33.625066084586706,
+                    "pHashDistance": 0
+                  },
+                  {
+                    "frame": 21,
+                    "time": 0.875,
+                    "sourceTime": 0.875,
+                    "mae": 2.806695601851852,
+                    "maxDeviation": 71,
+                    "ssim": 0.991436145273746,
+                    "psnr": 33.80356438962099,
+                    "pHashDistance": 0
+                  },
+                  {
+                    "frame": 35,
+                    "time": 1.4583333333333333,
+                    "sourceTime": 1.4583333333333333,
+                    "mae": 2.908744212962963,
+                    "maxDeviation": 65,
+                    "ssim": 0.9909281964470917,
+                    "psnr": 33.82061425026954,
+                    "pHashDistance": 2
+                  }
+                ],
+                "unmatchedTailSeconds": 0,
+                "sampleCount": 3,
+                "framesChecked": 3,
+                "resolution": {
+                  "width": 320,
+                  "height": 180
+                },
+                "fps": 24,
+                "perFrameReport": "/tmp/vus-strong-rXqKAh/full-analysis-1794770723382.jsonl",
+                "mae": {
+                  "mean": 2.8808757716049382,
+                  "min": 2.806695601851852,
+                  "max": 2.9271875
+                },
+                "ssim": {
+                  "mean": 0.9911171553825003,
+                  "min": 0.9909281964470917,
+                  "max": 0.991436145273746
+                },
+                "psnr": {
+                  "mean": 33.74974824149241,
+                  "min": 33.625066084586706,
+                  "max": 33.82061425026954
+                },
+                "maxPixelDeviation": {
+                  "mean": 69.66666666666667,
+                  "min": 65,
+                  "max": 73
+                },
+                "pHashDistance": {
+                  "mean": 0.6666666666666666,
+                  "min": 0,
+                  "max": 2
+                },
+                "audio": {
+                  "available": true,
+                  "seconds": 2,
+                  "pearson": 1,
+                  "normalizedMAE": 0,
+                  "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+                },
+                "sha256Source": "96f9fc3955cc4b4f71fb086fb9097a6e0fcc60a8503505e6a81417a8b58492d1",
+                "sha256Output": "bb1209c976626e7d239ab3d7c7455fe751d782cbe2e50be0ec90148cd56ba44f",
+                "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+                "vmaf": {
+                  "available": false,
+                  "reason": "Сборка FFmpeg без libvmaf"
+                }
+              },
+              "audio": {
+                "available": true,
+                "meanDb": -21.1,
+                "peakDb": -17.7,
+                "scope": "первые 15 секунд"
+              },
+              "qc": {
+                "blackIntervals": [],
+                "luminanceJumps": 0,
+                "note": "Резкие изменения яркости могут быть монтажными склейками или намеренными эффектами."
+              }
+            }
+          ]
+        },
+        {
+          "id": "candidate-3",
+          "eligible": true,
+          "mae": 2.2213908179012347,
+          "measurements": [
+            {
+              "analysis": {
+                "mode": "sampled",
+                "samples": [
+                  {
+                    "frame": 7,
+                    "time": 0.2916666666666667,
+                    "sourceTime": 0.2916666666666667,
+                    "mae": 2.377181712962963,
+                    "maxDeviation": 74,
+                    "ssim": 0.9918180607337803,
+                    "psnr": 33.66026912444303,
+                    "pHashDistance": 0
+                  },
+                  {
+                    "frame": 21,
+                    "time": 0.875,
+                    "sourceTime": 0.875,
+                    "mae": 2.30046875,
+                    "maxDeviation": 85,
+                    "ssim": 0.9927090242928314,
+                    "psnr": 33.90627604649049,
+                    "pHashDistance": 0
+                  },
+                  {
+                    "frame": 35,
+                    "time": 1.4583333333333333,
+                    "sourceTime": 1.4583333333333333,
+                    "mae": 2.3744733796296296,
+                    "maxDeviation": 66,
+                    "ssim": 0.9927990873561447,
+                    "psnr": 33.93797219873135,
+                    "pHashDistance": 2
+                  }
+                ],
+                "unmatchedTailSeconds": 0,
+                "sampleCount": 3,
+                "framesChecked": 3,
+                "resolution": {
+                  "width": 320,
+                  "height": 180
+                },
+                "fps": 24,
+                "perFrameReport": "/tmp/vus-strong-rXqKAh/full-analysis-1794770725578.jsonl",
+                "mae": {
+                  "mean": 2.3507079475308643,
+                  "min": 2.30046875,
+                  "max": 2.377181712962963
+                },
+                "ssim": {
+                  "mean": 0.9924420574609188,
+                  "min": 0.9918180607337803,
+                  "max": 0.9927990873561447
+                },
+                "psnr": {
+                  "mean": 33.83483912322163,
+                  "min": 33.66026912444303,
+                  "max": 33.93797219873135
+                },
+                "maxPixelDeviation": {
+                  "mean": 75,
+                  "min": 66,
+                  "max": 85
+                },
+                "pHashDistance": {
+                  "mean": 0.6666666666666666,
+                  "min": 0,
+                  "max": 2
+                },
+                "audio": {
+                  "available": true,
+                  "seconds": 2,
+                  "pearson": 0.9999985506121403,
+                  "normalizedMAE": 9.72309112548828e-05,
+                  "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+                },
+                "sha256Source": "c78845d7220de3252355a5d969b5754251893a778c9c36380058114d7673d326",
+                "sha256Output": "10f7f5764f16eb71cd2b828678be989c6baff9f10e3ad513c40511c8dd89b7a8",
+                "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+                "vmaf": {
+                  "available": false,
+                  "reason": "Сборка FFmpeg без libvmaf"
+                }
+              },
+              "controlAnalysis": {
+                "mode": "sampled",
+                "samples": [
+                  {
+                    "frame": 7,
+                    "time": 0.2916666666666667,
+                    "sourceTime": 0.2916666666666667,
+                    "mae": 2.2346180555555555,
+                    "maxDeviation": 76,
+                    "ssim": 0.9915521632775014,
+                    "psnr": 34.61841626099009,
+                    "pHashDistance": 0
+                  },
+                  {
+                    "frame": 21,
+                    "time": 0.875,
+                    "sourceTime": 0.875,
+                    "mae": 2.192013888888889,
+                    "maxDeviation": 77,
+                    "ssim": 0.9920263764211363,
+                    "psnr": 34.60232389954876,
+                    "pHashDistance": 0
+                  },
+                  {
+                    "frame": 35,
+                    "time": 1.4583333333333333,
+                    "sourceTime": 1.4583333333333333,
+                    "mae": 2.2375405092592593,
+                    "maxDeviation": 61,
+                    "ssim": 0.9911257911169029,
+                    "psnr": 34.828837937646504,
+                    "pHashDistance": 2
+                  }
+                ],
+                "unmatchedTailSeconds": 0,
+                "sampleCount": 3,
+                "framesChecked": 3,
+                "resolution": {
+                  "width": 320,
+                  "height": 180
+                },
+                "fps": 24,
+                "perFrameReport": "/tmp/vus-strong-rXqKAh/full-analysis-1794770726045.jsonl",
+                "mae": {
+                  "mean": 2.2213908179012347,
+                  "min": 2.192013888888889,
+                  "max": 2.2375405092592593
+                },
+                "ssim": {
+                  "mean": 0.9915681102718469,
+                  "min": 0.9911257911169029,
+                  "max": 0.9920263764211363
+                },
+                "psnr": {
+                  "mean": 34.683192699395114,
+                  "min": 34.60232389954876,
+                  "max": 34.828837937646504
+                },
+                "maxPixelDeviation": {
+                  "mean": 71.33333333333333,
+                  "min": 61,
+                  "max": 77
+                },
+                "pHashDistance": {
+                  "mean": 0.6666666666666666,
+                  "min": 0,
+                  "max": 2
+                },
+                "audio": {
+                  "available": true,
+                  "seconds": 2,
+                  "pearson": 1,
+                  "normalizedMAE": 0,
+                  "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+                },
+                "sha256Source": "96f9fc3955cc4b4f71fb086fb9097a6e0fcc60a8503505e6a81417a8b58492d1",
+                "sha256Output": "10f7f5764f16eb71cd2b828678be989c6baff9f10e3ad513c40511c8dd89b7a8",
+                "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+                "vmaf": {
+                  "available": false,
+                  "reason": "Сборка FFmpeg без libvmaf"
+                }
+              },
+              "audio": {
+                "available": true,
+                "meanDb": -21.1,
+                "peakDb": -17.7,
+                "scope": "первые 15 секунд"
+              },
+              "qc": {
+                "blackIntervals": [],
+                "luminanceJumps": 0,
+                "note": "Резкие изменения яркости могут быть монтажными склейками или намеренными эффектами."
+              }
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "qcMode": "full",
+        "analysisMode": "sampled",
+        "randomScaleMin": 100,
+        "randomScaleMax": 100,
+        "randomRotationMin": 0,
+        "randomRotationMax": 0,
+        "analysisSamples": 7,
+        "analysisSize": 128,
+        "frameEdits": [],
+        "cropLeft": 0,
+        "cropRight": 0,
+        "cropTop": 0,
+        "cropBottom": 0,
+        "interpolationMode": "mci",
+        "seed": 123,
+        "brightness": -0.010499999999999999,
+        "contrast": 1.0315,
+        "saturation": 1.042,
+        "hue": 0,
+        "gamma": 1,
+        "temperature": 0,
+        "red": 0,
+        "green": 0,
+        "blue": 0,
+        "sharpness": 0,
+        "blur": 0,
+        "curves": "",
+        "pixel": 0,
+        "pixelDistribution": "sine",
+        "frameDelta": 0,
+        "pixelSeed": 123,
+        "correlation": 0,
+        "temporal": 0,
+        "speed": 1,
+        "extra": 0,
+        "randomDuration": false,
+        "durationMethod": "freeze",
+        "fps": 0,
+        "interpolation": false,
+        "scale": 100,
+        "x": 0,
+        "y": 0,
+        "flip": false,
+        "crop": 0,
+        "volume": 1,
+        "mute": false,
+        "normalize": false,
+        "fadeIn": 0,
+        "fadeOut": 0,
+        "metadata": true,
+        "title": "",
+        "comment": "",
+        "description": "",
+        "width": 0,
+        "height": 0,
+        "crf": 21,
+        "bitrate": 0,
+        "encoder": "libx264",
+        "format": "mp4",
+        "preset": "medium",
+        "audioBitrate": 192,
+        "layers": [
+          {
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "id": "4ef0d017-13df-4ddd-9a7a-3dfd4ddc914a",
+            "name": "ИИ · слой 1",
+            "enabled": true,
+            "locked": false,
+            "group": "",
+            "type": "overlay",
+            "textureId": "vus-micro-17",
+            "opacity": 3.15,
+            "scale": 100,
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "flip": false,
+            "crop": 0,
+            "mode": "softlight",
+            "start": 0,
+            "end": 0,
+            "loop": true,
+            "speed": 1,
+            "offset": 0,
+            "fadeIn": 0,
+            "fadeOut": 0,
+            "random": false,
+            "proceduralSeed": 123
+          },
+          {
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "id": "75dfdd87-6a39-4fe1-b4d4-412ccde9bf8d",
+            "name": "ИИ · слой 2",
+            "enabled": true,
+            "locked": false,
+            "group": "",
+            "type": "overlay",
+            "textureId": "vus-micro-24",
+            "opacity": 1.575,
+            "scale": 100,
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "flip": false,
+            "crop": 0,
+            "mode": "softlight",
+            "start": 0,
+            "end": 0,
+            "loop": true,
+            "speed": 1,
+            "offset": 0,
+            "fadeIn": 0,
+            "fadeOut": 0,
+            "random": false,
+            "proceduralSeed": 123
+          }
+        ],
+        "background": "black",
+        "batchMode": "same",
+        "randomMin": 3,
+        "randomMax": 15,
+        "filename": "{name}_{index}",
+        "analysis": true,
+        "aiLocked": true
+      },
+      "finalCheck": {
+        "analysis": {
+          "mode": "sampled",
+          "samples": [
+            {
+              "frame": 3,
+              "time": 0.125,
+              "sourceTime": 0.125,
+              "mae": 3.300827546296296,
+              "maxDeviation": 59,
+              "ssim": 0.9925680940357365,
+              "psnr": 33.20451150833801,
+              "pHashDistance": 2
+            },
+            {
+              "frame": 9,
+              "time": 0.375,
+              "sourceTime": 0.375,
+              "mae": 3.5966087962962963,
+              "maxDeviation": 68,
+              "ssim": 0.991463236048593,
+              "psnr": 32.310372625572896,
+              "pHashDistance": 0
+            },
+            {
+              "frame": 15,
+              "time": 0.625,
+              "sourceTime": 0.625,
+              "mae": 3.5825868055555556,
+              "maxDeviation": 64,
+              "ssim": 0.9926262546793704,
+              "psnr": 32.36082521492664,
+              "pHashDistance": 0
+            }
+          ],
+          "unmatchedTailSeconds": 0,
+          "sampleCount": 3,
+          "framesChecked": 3,
+          "resolution": {
+            "width": 320,
+            "height": 180
+          },
+          "fps": 24,
+          "perFrameReport": "/tmp/vus-strong-rXqKAh/full-analysis-1794770728759.jsonl",
+          "mae": {
+            "mean": 3.493341049382716,
+            "min": 3.300827546296296,
+            "max": 3.5966087962962963
+          },
+          "ssim": {
+            "mean": 0.9922191949212333,
+            "min": 0.991463236048593,
+            "max": 0.9926262546793704
+          },
+          "psnr": {
+            "mean": 32.625236449612515,
+            "min": 32.310372625572896,
+            "max": 33.20451150833801
+          },
+          "maxPixelDeviation": {
+            "mean": 63.666666666666664,
+            "min": 59,
+            "max": 68
+          },
+          "pHashDistance": {
+            "mean": 0.6666666666666666,
+            "min": 0,
+            "max": 2
+          },
+          "audio": {
+            "available": true,
+            "seconds": 1,
+            "pearson": 0.9999977934416314,
+            "normalizedMAE": 0.00010546493530273437,
+            "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+          },
+          "sha256Source": "a21193c0378faaf1d88ed6a7f52f1e7c306209a0214d64d4291a61d2631c5a57",
+          "sha256Output": "441378b2e52f7a12da75f0cfdda454c908920aeaa67901d36c5e766e9fec3e01",
+          "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+          "vmaf": {
+            "available": false,
+            "reason": "Сборка FFmpeg без libvmaf"
+          }
+        },
+        "audio": {
+          "available": true,
+          "meanDb": -21.2,
+          "peakDb": -17.7,
+          "scope": "первые 15 секунд"
+        },
+        "qc": {
+          "blackIntervals": [],
+          "luminanceJumps": 0,
+          "note": "Резкие изменения яркости могут быть монтажными склейками или намеренными эффектами."
+        }
+      }
+    },
+    {
+      "version": "3.2.2",
+      "status": "done",
+      "tests": [
+        {
+          "id": "candidate-1",
+          "eligible": false,
+          "mae": 2.4899614197530866,
+          "issues": [
+            {
+              "code": "weak",
+              "message": "Недостаточная выраженность: MAE эффектов 2.49 < 4",
+              "kind": "strength",
+              "sample": 1
+            }
+          ],
+          "originalIssues": [
+            {
+              "code": "weak",
+              "message": "Недостаточная выраженность: MAE эффектов 2.20 < 4",
+              "kind": "strength",
+              "sample": 1
+            }
+          ],
+          "corrections": [
+            "Усилены цвет и активные слои без добавления шума"
+          ],
+          "measurements": [
+            {
+              "analysis": {
+                "mode": "sampled",
+                "samples": [
+                  {
+                    "frame": 7,
+                    "time": 0.2916666666666667,
+                    "sourceTime": 0.2916666666666667,
+                    "mae": 2.1225868055555557,
+                    "maxDeviation": 77,
+                    "ssim": 0.9879649150289342,
+                    "psnr": 32.63185658588651,
+                    "pHashDistance": 0
+                  },
+                  {
+                    "frame": 21,
+                    "time": 0.875,
+                    "sourceTime": 0.875,
+                    "mae": 2.00703125,
+                    "maxDeviation": 73,
+                    "ssim": 0.988837700603624,
+                    "psnr": 32.79862268042862,
+                    "pHashDistance": 2
+                  },
+                  {
+                    "frame": 35,
+                    "time": 1.4583333333333333,
+                    "sourceTime": 1.4583333333333333,
+                    "mae": 2.2308101851851854,
+                    "maxDeviation": 74,
+                    "ssim": 0.9884562987747809,
+                    "psnr": 32.335371795505246,
+                    "pHashDistance": 4
+                  }
+                ],
+                "unmatchedTailSeconds": 0,
+                "sampleCount": 3,
+                "framesChecked": 3,
+                "resolution": {
+                  "width": 320,
+                  "height": 180
+                },
+                "fps": 24,
+                "perFrameReport": "/tmp/vus-strong-60LWrP/full-analysis-1794770736284.jsonl",
+                "mae": {
+                  "mean": 2.1201427469135803,
+                  "min": 2.00703125,
+                  "max": 2.2308101851851854
+                },
+                "ssim": {
+                  "mean": 0.9884196381357797,
+                  "min": 0.9879649150289342,
+                  "max": 0.988837700603624
+                },
+                "psnr": {
+                  "mean": 32.58861702060679,
+                  "min": 32.335371795505246,
+                  "max": 32.79862268042862
+                },
+                "maxPixelDeviation": {
+                  "mean": 74.66666666666667,
+                  "min": 73,
+                  "max": 77
+                },
+                "pHashDistance": {
+                  "mean": 2,
+                  "min": 0,
+                  "max": 4
+                },
+                "audio": {
+                  "available": true,
+                  "seconds": 2,
+                  "pearson": 0.9999985506121403,
+                  "normalizedMAE": 9.72309112548828e-05,
+                  "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+                },
+                "sha256Source": "72a21f7475e9a468a8688e43d443c551c08f7c98f670011f88cc1d1bcd61cbcd",
+                "sha256Output": "b794868ae1d3b24df0713526150ba2f7943e3b695b0c03c48e3fecc4421baa7c",
+                "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+                "vmaf": {
+                  "available": false,
+                  "reason": "Сборка FFmpeg без libvmaf"
+                }
+              },
+              "controlAnalysis": {
+                "mode": "sampled",
+                "samples": [
+                  {
+                    "frame": 7,
+                    "time": 0.2916666666666667,
+                    "sourceTime": 0.2916666666666667,
+                    "mae": 2.4520601851851853,
+                    "maxDeviation": 74,
+                    "ssim": 0.987893525468063,
+                    "psnr": 32.94467881198575,
+                    "pHashDistance": 0
+                  },
+                  {
+                    "frame": 21,
+                    "time": 0.875,
+                    "sourceTime": 0.875,
+                    "mae": 2.393611111111111,
+                    "maxDeviation": 83,
+                    "ssim": 0.988298111558846,
+                    "psnr": 32.83618368866824,
+                    "pHashDistance": 2
+                  },
+                  {
+                    "frame": 35,
+                    "time": 1.4583333333333333,
+                    "sourceTime": 1.4583333333333333,
+                    "mae": 2.624212962962963,
+                    "maxDeviation": 69,
+                    "ssim": 0.9862528699962552,
+                    "psnr": 32.2860608646175,
+                    "pHashDistance": 4
+                  }
+                ],
+                "unmatchedTailSeconds": 0,
+                "sampleCount": 3,
+                "framesChecked": 3,
+                "resolution": {
+                  "width": 320,
+                  "height": 180
+                },
+                "fps": 24,
+                "perFrameReport": "/tmp/vus-strong-60LWrP/full-analysis-1794770736804.jsonl",
+                "mae": {
+                  "mean": 2.4899614197530866,
+                  "min": 2.393611111111111,
+                  "max": 2.624212962962963
+                },
+                "ssim": {
+                  "mean": 0.9874815023410548,
+                  "min": 0.9862528699962552,
+                  "max": 0.988298111558846
+                },
+                "psnr": {
+                  "mean": 32.688974455090495,
+                  "min": 32.2860608646175,
+                  "max": 32.94467881198575
+                },
+                "maxPixelDeviation": {
+                  "mean": 75.33333333333333,
+                  "min": 69,
+                  "max": 83
+                },
+                "pHashDistance": {
+                  "mean": 2,
+                  "min": 0,
+                  "max": 4
+                },
+                "audio": {
+                  "available": true,
+                  "seconds": 2,
+                  "pearson": 1,
+                  "normalizedMAE": 0,
+                  "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+                },
+                "sha256Source": "96f9fc3955cc4b4f71fb086fb9097a6e0fcc60a8503505e6a81417a8b58492d1",
+                "sha256Output": "b794868ae1d3b24df0713526150ba2f7943e3b695b0c03c48e3fecc4421baa7c",
+                "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+                "vmaf": {
+                  "available": false,
+                  "reason": "Сборка FFmpeg без libvmaf"
+                }
+              },
+              "audio": {
+                "available": true,
+                "meanDb": -21.1,
+                "peakDb": -17.7,
+                "scope": "первые 15 секунд"
+              },
+              "qc": {
+                "blackIntervals": [],
+                "luminanceJumps": 0,
+                "note": "Резкие изменения яркости могут быть монтажными склейками или намеренными эффектами."
+              }
+            }
+          ]
+        },
+        {
+          "id": "candidate-2",
+          "eligible": true,
+          "mae": 17.77673804012346,
+          "issues": [],
+          "originalIssues": [],
+          "corrections": [],
+          "measurements": [
+            {
+              "analysis": {
+                "mode": "sampled",
+                "samples": [
+                  {
+                    "frame": 7,
+                    "time": 0.2916666666666667,
+                    "sourceTime": 0.2916666666666667,
+                    "mae": 18.440844907407406,
+                    "maxDeviation": 107,
+                    "ssim": 0.9797451754801321,
+                    "psnr": 20.480058631995142,
+                    "pHashDistance": 4
+                  },
+                  {
+                    "frame": 21,
+                    "time": 0.875,
+                    "sourceTime": 0.875,
+                    "mae": 18.77267939814815,
+                    "maxDeviation": 105,
+                    "ssim": 0.975586658482975,
+                    "psnr": 20.379409749883916,
+                    "pHashDistance": 2
+                  },
+                  {
+                    "frame": 35,
+                    "time": 1.4583333333333333,
+                    "sourceTime": 1.4583333333333333,
+                    "mae": 18.622708333333332,
+                    "maxDeviation": 127,
+                    "ssim": 0.9741506692158384,
+                    "psnr": 20.410361203758857,
+                    "pHashDistance": 6
+                  }
+                ],
+                "unmatchedTailSeconds": 0,
+                "sampleCount": 3,
+                "framesChecked": 3,
+                "resolution": {
+                  "width": 320,
+                  "height": 180
+                },
+                "fps": 24,
+                "perFrameReport": "/tmp/vus-strong-60LWrP/full-analysis-1794770738321.jsonl",
+                "mae": {
+                  "mean": 18.612077546296295,
+                  "min": 18.440844907407406,
+                  "max": 18.77267939814815
+                },
+                "ssim": {
+                  "mean": 0.9764941677263153,
+                  "min": 0.9741506692158384,
+                  "max": 0.9797451754801321
+                },
+                "psnr": {
+                  "mean": 20.42327652854597,
+                  "min": 20.379409749883916,
+                  "max": 20.480058631995142
+                },
+                "maxPixelDeviation": {
+                  "mean": 113,
+                  "min": 105,
+                  "max": 127
+                },
+                "pHashDistance": {
+                  "mean": 4,
+                  "min": 2,
+                  "max": 6
+                },
+                "audio": {
+                  "available": true,
+                  "seconds": 2,
+                  "pearson": 0.9999985506121403,
+                  "normalizedMAE": 9.72309112548828e-05,
+                  "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+                },
+                "sha256Source": "72a21f7475e9a468a8688e43d443c551c08f7c98f670011f88cc1d1bcd61cbcd",
+                "sha256Output": "79de8ca622f1439be5c846a07cb063eb506d0f03b662b7dc7ff9a420ad61bb9c",
+                "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+                "vmaf": {
+                  "available": false,
+                  "reason": "Сборка FFmpeg без libvmaf"
+                }
+              },
+              "controlAnalysis": {
+                "mode": "sampled",
+                "samples": [
+                  {
+                    "frame": 7,
+                    "time": 0.2916666666666667,
+                    "sourceTime": 0.2916666666666667,
+                    "mae": 17.582181712962964,
+                    "maxDeviation": 76,
+                    "ssim": 0.9784823899127525,
+                    "psnr": 20.87679417894028,
+                    "pHashDistance": 4
+                  },
+                  {
+                    "frame": 21,
+                    "time": 0.875,
+                    "sourceTime": 0.875,
+                    "mae": 17.921203703703704,
+                    "maxDeviation": 90,
+                    "ssim": 0.9745901753589389,
+                    "psnr": 20.771904526922896,
+                    "pHashDistance": 2
+                  },
+                  {
+                    "frame": 35,
+                    "time": 1.4583333333333333,
+                    "sourceTime": 1.4583333333333333,
+                    "mae": 17.826828703703704,
+                    "maxDeviation": 105,
+                    "ssim": 0.9724909140232199,
+                    "psnr": 20.784333543735247,
+                    "pHashDistance": 4
+                  }
+                ],
+                "unmatchedTailSeconds": 0,
+                "sampleCount": 3,
+                "framesChecked": 3,
+                "resolution": {
+                  "width": 320,
+                  "height": 180
+                },
+                "fps": 24,
+                "perFrameReport": "/tmp/vus-strong-60LWrP/full-analysis-1794770738819.jsonl",
+                "mae": {
+                  "mean": 17.77673804012346,
+                  "min": 17.582181712962964,
+                  "max": 17.921203703703704
+                },
+                "ssim": {
+                  "mean": 0.975187826431637,
+                  "min": 0.9724909140232199,
+                  "max": 0.9784823899127525
+                },
+                "psnr": {
+                  "mean": 20.811010749866142,
+                  "min": 20.771904526922896,
+                  "max": 20.87679417894028
+                },
+                "maxPixelDeviation": {
+                  "mean": 90.33333333333333,
+                  "min": 76,
+                  "max": 105
+                },
+                "pHashDistance": {
+                  "mean": 3.3333333333333335,
+                  "min": 2,
+                  "max": 4
+                },
+                "audio": {
+                  "available": true,
+                  "seconds": 2,
+                  "pearson": 1,
+                  "normalizedMAE": 0,
+                  "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+                },
+                "sha256Source": "96f9fc3955cc4b4f71fb086fb9097a6e0fcc60a8503505e6a81417a8b58492d1",
+                "sha256Output": "79de8ca622f1439be5c846a07cb063eb506d0f03b662b7dc7ff9a420ad61bb9c",
+                "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+                "vmaf": {
+                  "available": false,
+                  "reason": "Сборка FFmpeg без libvmaf"
+                }
+              },
+              "audio": {
+                "available": true,
+                "meanDb": -21.1,
+                "peakDb": -17.7,
+                "scope": "первые 15 секунд"
+              },
+              "qc": {
+                "blackIntervals": [],
+                "luminanceJumps": 0,
+                "note": "Резкие изменения яркости могут быть монтажными склейками или намеренными эффектами."
+              }
+            }
+          ]
+        },
+        {
+          "id": "candidate-3",
+          "eligible": false,
+          "mae": 3.0063850308641977,
+          "issues": [
+            {
+              "code": "weak",
+              "message": "Недостаточная выраженность: MAE эффектов 3.01 < 4",
+              "kind": "strength",
+              "sample": 1
+            }
+          ],
+          "originalIssues": [
+            {
+              "code": "weak",
+              "message": "Недостаточная выраженность: MAE эффектов 2.73 < 4",
+              "kind": "strength",
+              "sample": 1
+            }
+          ],
+          "corrections": [
+            "Усилены цвет и активные слои без добавления шума"
+          ],
+          "measurements": [
+            {
+              "analysis": {
+                "mode": "sampled",
+                "samples": [
+                  {
+                    "frame": 7,
+                    "time": 0.2916666666666667,
+                    "sourceTime": 0.2916666666666667,
+                    "mae": 2.6756712962962963,
+                    "maxDeviation": 93,
+                    "ssim": 0.9827247814687119,
+                    "psnr": 30.371505721967054,
+                    "pHashDistance": 2
+                  },
+                  {
+                    "frame": 21,
+                    "time": 0.875,
+                    "sourceTime": 0.875,
+                    "mae": 2.48484375,
+                    "maxDeviation": 82,
+                    "ssim": 0.9839162330270225,
+                    "psnr": 30.783770463333994,
+                    "pHashDistance": 2
+                  },
+                  {
+                    "frame": 35,
+                    "time": 1.4583333333333333,
+                    "sourceTime": 1.4583333333333333,
+                    "mae": 2.809739583333333,
+                    "maxDeviation": 66,
+                    "ssim": 0.984506733307802,
+                    "psnr": 30.212531068186152,
+                    "pHashDistance": 4
+                  }
+                ],
+                "unmatchedTailSeconds": 0,
+                "sampleCount": 3,
+                "framesChecked": 3,
+                "resolution": {
+                  "width": 320,
+                  "height": 180
+                },
+                "fps": 24,
+                "perFrameReport": "/tmp/vus-strong-60LWrP/full-analysis-1794770741531.jsonl",
+                "mae": {
+                  "mean": 2.6567515432098765,
+                  "min": 2.48484375,
+                  "max": 2.809739583333333
+                },
+                "ssim": {
+                  "mean": 0.9837159159345122,
+                  "min": 0.9827247814687119,
+                  "max": 0.984506733307802
+                },
+                "psnr": {
+                  "mean": 30.4559357511624,
+                  "min": 30.212531068186152,
+                  "max": 30.783770463333994
+                },
+                "maxPixelDeviation": {
+                  "mean": 80.33333333333333,
+                  "min": 66,
+                  "max": 93
+                },
+                "pHashDistance": {
+                  "mean": 2.6666666666666665,
+                  "min": 2,
+                  "max": 4
+                },
+                "audio": {
+                  "available": true,
+                  "seconds": 2,
+                  "pearson": 0.9999985506121403,
+                  "normalizedMAE": 9.72309112548828e-05,
+                  "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+                },
+                "sha256Source": "72a21f7475e9a468a8688e43d443c551c08f7c98f670011f88cc1d1bcd61cbcd",
+                "sha256Output": "502b71dfa887d3ed26fbb0587b7c67918600d901badf18cf6fe58f3ab548c89d",
+                "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+                "vmaf": {
+                  "available": false,
+                  "reason": "Сборка FFmpeg без libvmaf"
+                }
+              },
+              "controlAnalysis": {
+                "mode": "sampled",
+                "samples": [
+                  {
+                    "frame": 7,
+                    "time": 0.2916666666666667,
+                    "sourceTime": 0.2916666666666667,
+                    "mae": 3.0250405092592594,
+                    "maxDeviation": 99,
+                    "ssim": 0.982586517204447,
+                    "psnr": 30.616077686549893,
+                    "pHashDistance": 2
+                  },
+                  {
+                    "frame": 21,
+                    "time": 0.875,
+                    "sourceTime": 0.875,
+                    "mae": 2.8423958333333332,
+                    "maxDeviation": 80,
+                    "ssim": 0.9834844373234617,
+                    "psnr": 30.821865436071576,
+                    "pHashDistance": 2
+                  },
+                  {
+                    "frame": 35,
+                    "time": 1.4583333333333333,
+                    "sourceTime": 1.4583333333333333,
+                    "mae": 3.15171875,
+                    "maxDeviation": 73,
+                    "ssim": 0.9829890317355647,
+                    "psnr": 30.27455336605763,
+                    "pHashDistance": 4
+                  }
+                ],
+                "unmatchedTailSeconds": 0,
+                "sampleCount": 3,
+                "framesChecked": 3,
+                "resolution": {
+                  "width": 320,
+                  "height": 180
+                },
+                "fps": 24,
+                "perFrameReport": "/tmp/vus-strong-60LWrP/full-analysis-1794770741928.jsonl",
+                "mae": {
+                  "mean": 3.0063850308641977,
+                  "min": 2.8423958333333332,
+                  "max": 3.15171875
+                },
+                "ssim": {
+                  "mean": 0.9830199954211579,
+                  "min": 0.982586517204447,
+                  "max": 0.9834844373234617
+                },
+                "psnr": {
+                  "mean": 30.570832162893037,
+                  "min": 30.27455336605763,
+                  "max": 30.821865436071576
+                },
+                "maxPixelDeviation": {
+                  "mean": 84,
+                  "min": 73,
+                  "max": 99
+                },
+                "pHashDistance": {
+                  "mean": 2.6666666666666665,
+                  "min": 2,
+                  "max": 4
+                },
+                "audio": {
+                  "available": true,
+                  "seconds": 2,
+                  "pearson": 1,
+                  "normalizedMAE": 0,
+                  "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+                },
+                "sha256Source": "96f9fc3955cc4b4f71fb086fb9097a6e0fcc60a8503505e6a81417a8b58492d1",
+                "sha256Output": "502b71dfa887d3ed26fbb0587b7c67918600d901badf18cf6fe58f3ab548c89d",
+                "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+                "vmaf": {
+                  "available": false,
+                  "reason": "Сборка FFmpeg без libvmaf"
+                }
+              },
+              "audio": {
+                "available": true,
+                "meanDb": -21.1,
+                "peakDb": -17.7,
+                "scope": "первые 15 секунд"
+              },
+              "qc": {
+                "blackIntervals": [],
+                "luminanceJumps": 0,
+                "note": "Резкие изменения яркости могут быть монтажными склейками или намеренными эффектами."
+              }
+            }
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "candidate-1",
+          "reason": "Выразительный цвет: тёплый тон и контраст",
+          "settings": {
+            "qcMode": "full",
+            "analysisMode": "sampled",
+            "randomScaleMin": 100,
+            "randomScaleMax": 100,
+            "randomRotationMin": 0,
+            "randomRotationMax": 0,
+            "analysisSamples": 7,
+            "analysisSize": 128,
+            "frameEdits": [],
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "interpolationMode": "mci",
+            "seed": 123,
+            "brightness": 0,
+            "contrast": 1.12,
+            "saturation": 1.21,
+            "hue": 0,
+            "gamma": 1,
+            "temperature": 0.12,
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "sharpness": 0,
+            "blur": 0,
+            "curves": "",
+            "pixel": 0,
+            "pixelDistribution": "sine",
+            "frameDelta": 0,
+            "pixelSeed": 123,
+            "correlation": 0,
+            "temporal": 0,
+            "speed": 1,
+            "extra": 0,
+            "randomDuration": false,
+            "durationMethod": "freeze",
+            "fps": 0,
+            "interpolation": false,
+            "scale": 100,
+            "x": 0,
+            "y": 0,
+            "flip": false,
+            "crop": 0,
+            "volume": 1,
+            "mute": false,
+            "normalize": false,
+            "fadeIn": 0,
+            "fadeOut": 0,
+            "metadata": true,
+            "title": "",
+            "comment": "",
+            "description": "",
+            "width": 0,
+            "height": 0,
+            "crf": 21,
+            "bitrate": 0,
+            "encoder": "libx264",
+            "format": "mp4",
+            "preset": "medium",
+            "audioBitrate": 192,
+            "layers": [
+              {
+                "cropLeft": 0,
+                "cropRight": 0,
+                "cropTop": 0,
+                "cropBottom": 0,
+                "id": "cb40c7b5-94e1-4064-adfd-24de2357d89c",
+                "name": "ИИ · слой 1",
+                "enabled": true,
+                "locked": false,
+                "group": "",
+                "type": "overlay",
+                "textureId": "vus-light-04",
+                "opacity": 21,
+                "scale": 100,
+                "x": 0,
+                "y": 0,
+                "rotation": 0,
+                "flip": false,
+                "crop": 0,
+                "mode": "softlight",
+                "start": 0,
+                "end": 0,
+                "loop": true,
+                "speed": 1,
+                "offset": 0,
+                "fadeIn": 0,
+                "fadeOut": 0,
+                "random": false,
+                "proceduralSeed": 123
+              }
+            ],
+            "background": "black",
+            "batchMode": "same",
+            "randomMin": 3,
+            "randomMax": 15,
+            "filename": "{name}_{index}",
+            "analysis": true
+          },
+          "issues": [
+            {
+              "code": "weak",
+              "message": "Недостаточная выраженность: MAE эффектов 2.49 < 4",
+              "kind": "strength",
+              "sample": 1
+            }
+          ],
+          "originalIssues": [
+            {
+              "code": "weak",
+              "message": "Недостаточная выраженность: MAE эффектов 2.20 < 4",
+              "kind": "strength",
+              "sample": 1
+            }
+          ],
+          "corrections": [
+            "Усилены цвет и активные слои без добавления шума"
+          ],
+          "eligible": false,
+          "mae": 2.4899614197530866
+        },
+        {
+          "id": "candidate-2",
+          "reason": "Холодное текстурное оформление",
+          "settings": {
+            "qcMode": "full",
+            "analysisMode": "sampled",
+            "randomScaleMin": 100,
+            "randomScaleMax": 100,
+            "randomRotationMin": 0,
+            "randomRotationMax": 0,
+            "analysisSamples": 7,
+            "analysisSize": 128,
+            "frameEdits": [],
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "interpolationMode": "mci",
+            "seed": 123,
+            "brightness": 0,
+            "contrast": 1.08,
+            "saturation": 0.84,
+            "hue": 0,
+            "gamma": 1,
+            "temperature": -0.1,
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "sharpness": 0,
+            "blur": 0,
+            "curves": "",
+            "pixel": 0,
+            "pixelDistribution": "sine",
+            "frameDelta": 0,
+            "pixelSeed": 123,
+            "correlation": 0,
+            "temporal": 0,
+            "speed": 1,
+            "extra": 0,
+            "randomDuration": false,
+            "durationMethod": "freeze",
+            "fps": 0,
+            "interpolation": false,
+            "scale": 100,
+            "x": 0,
+            "y": 0,
+            "flip": false,
+            "crop": 0,
+            "volume": 1,
+            "mute": false,
+            "normalize": false,
+            "fadeIn": 0,
+            "fadeOut": 0,
+            "metadata": true,
+            "title": "",
+            "comment": "",
+            "description": "",
+            "width": 0,
+            "height": 0,
+            "crf": 21,
+            "bitrate": 0,
+            "encoder": "libx264",
+            "format": "mp4",
+            "preset": "medium",
+            "audioBitrate": 192,
+            "layers": [
+              {
+                "cropLeft": 0,
+                "cropRight": 0,
+                "cropTop": 0,
+                "cropBottom": 0,
+                "id": "f8d398a3-bde9-41d5-810e-a428a59cebb3",
+                "name": "ИИ · слой 1",
+                "enabled": true,
+                "locked": false,
+                "group": "",
+                "type": "overlay",
+                "textureId": "vus-film-19",
+                "opacity": 10,
+                "scale": 100,
+                "x": 0,
+                "y": 0,
+                "rotation": 0,
+                "flip": false,
+                "crop": 0,
+                "mode": "softlight",
+                "start": 0,
+                "end": 0,
+                "loop": true,
+                "speed": 1,
+                "offset": 0,
+                "fadeIn": 0,
+                "fadeOut": 0,
+                "random": false,
+                "proceduralSeed": 123
+              },
+              {
+                "cropLeft": 0,
+                "cropRight": 0,
+                "cropTop": 0,
+                "cropBottom": 0,
+                "id": "982409c2-9232-4863-a5c9-a890494aa4f6",
+                "name": "ИИ · слой 2",
+                "enabled": true,
+                "locked": false,
+                "group": "",
+                "type": "overlay",
+                "textureId": "vus-light-06",
+                "opacity": 18,
+                "scale": 100,
+                "x": 0,
+                "y": 0,
+                "rotation": 0,
+                "flip": false,
+                "crop": 0,
+                "mode": "screen",
+                "start": 0,
+                "end": 0,
+                "loop": true,
+                "speed": 1,
+                "offset": 0,
+                "fadeIn": 0,
+                "fadeOut": 0,
+                "random": false,
+                "proceduralSeed": 123
+              }
+            ],
+            "background": "black",
+            "batchMode": "same",
+            "randomMin": 3,
+            "randomMax": 15,
+            "filename": "{name}_{index}",
+            "analysis": true
+          },
+          "issues": [],
+          "originalIssues": [],
+          "corrections": [],
+          "eligible": true,
+          "mae": 17.77673804012346,
+          "finalIssues": []
+        },
+        {
+          "id": "candidate-3",
+          "reason": "Насыщенный цвет и свет без изменения композиции",
+          "settings": {
+            "qcMode": "full",
+            "analysisMode": "sampled",
+            "randomScaleMin": 100,
+            "randomScaleMax": 100,
+            "randomRotationMin": 0,
+            "randomRotationMax": 0,
+            "analysisSamples": 7,
+            "analysisSize": 128,
+            "frameEdits": [],
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "interpolationMode": "mci",
+            "seed": 123,
+            "brightness": 0,
+            "contrast": 1.12,
+            "saturation": 1.21,
+            "hue": 4,
+            "gamma": 1,
+            "temperature": 0.063,
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "sharpness": 0,
+            "blur": 0,
+            "curves": "",
+            "pixel": 0,
+            "pixelDistribution": "sine",
+            "frameDelta": 0,
+            "pixelSeed": 123,
+            "correlation": 0,
+            "temporal": 0,
+            "speed": 1,
+            "extra": 0,
+            "randomDuration": false,
+            "durationMethod": "freeze",
+            "fps": 0,
+            "interpolation": false,
+            "scale": 100,
+            "x": 0,
+            "y": 0,
+            "flip": false,
+            "crop": 0,
+            "volume": 1,
+            "mute": false,
+            "normalize": false,
+            "fadeIn": 0,
+            "fadeOut": 0,
+            "metadata": true,
+            "title": "",
+            "comment": "",
+            "description": "",
+            "width": 0,
+            "height": 0,
+            "crf": 21,
+            "bitrate": 0,
+            "encoder": "libx264",
+            "format": "mp4",
+            "preset": "medium",
+            "audioBitrate": 192,
+            "layers": [
+              {
+                "cropLeft": 0,
+                "cropRight": 0,
+                "cropTop": 0,
+                "cropBottom": 0,
+                "id": "40b7557d-cd01-4f05-b260-447427cc26ba",
+                "name": "ИИ · слой 1",
+                "enabled": true,
+                "locked": false,
+                "group": "",
+                "type": "overlay",
+                "textureId": "vus-light-07",
+                "opacity": 33,
+                "scale": 100,
+                "x": 0,
+                "y": 0,
+                "rotation": 0,
+                "flip": false,
+                "crop": 0,
+                "mode": "softlight",
+                "start": 0,
+                "end": 0,
+                "loop": true,
+                "speed": 1,
+                "offset": 0,
+                "fadeIn": 0,
+                "fadeOut": 0,
+                "random": false,
+                "proceduralSeed": 123
+              }
+            ],
+            "background": "black",
+            "batchMode": "same",
+            "randomMin": 3,
+            "randomMax": 15,
+            "filename": "{name}_{index}",
+            "analysis": true
+          },
+          "issues": [
+            {
+              "code": "weak",
+              "message": "Недостаточная выраженность: MAE эффектов 3.01 < 4",
+              "kind": "strength",
+              "sample": 1
+            }
+          ],
+          "originalIssues": [
+            {
+              "code": "weak",
+              "message": "Недостаточная выраженность: MAE эффектов 2.73 < 4",
+              "kind": "strength",
+              "sample": 1
+            }
+          ],
+          "corrections": [
+            "Усилены цвет и активные слои без добавления шума"
+          ],
+          "eligible": false,
+          "mae": 3.0063850308641977
+        }
+      ],
+      "settings": {
+        "qcMode": "full",
+        "analysisMode": "sampled",
+        "randomScaleMin": 100,
+        "randomScaleMax": 100,
+        "randomRotationMin": 0,
+        "randomRotationMax": 0,
+        "analysisSamples": 7,
+        "analysisSize": 128,
+        "frameEdits": [],
+        "cropLeft": 0,
+        "cropRight": 0,
+        "cropTop": 0,
+        "cropBottom": 0,
+        "interpolationMode": "mci",
+        "seed": 123,
+        "brightness": 0,
+        "contrast": 1.08,
+        "saturation": 0.84,
+        "hue": 0,
+        "gamma": 1,
+        "temperature": -0.1,
+        "red": 0,
+        "green": 0,
+        "blue": 0,
+        "sharpness": 0,
+        "blur": 0,
+        "curves": "",
+        "pixel": 0,
+        "pixelDistribution": "sine",
+        "frameDelta": 0,
+        "pixelSeed": 123,
+        "correlation": 0,
+        "temporal": 0,
+        "speed": 1,
+        "extra": 0,
+        "randomDuration": false,
+        "durationMethod": "freeze",
+        "fps": 0,
+        "interpolation": false,
+        "scale": 100,
+        "x": 0,
+        "y": 0,
+        "flip": false,
+        "crop": 0,
+        "volume": 1,
+        "mute": false,
+        "normalize": false,
+        "fadeIn": 0,
+        "fadeOut": 0,
+        "metadata": true,
+        "title": "",
+        "comment": "",
+        "description": "",
+        "width": 0,
+        "height": 0,
+        "crf": 21,
+        "bitrate": 0,
+        "encoder": "libx264",
+        "format": "mp4",
+        "preset": "medium",
+        "audioBitrate": 192,
+        "layers": [
+          {
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "id": "f8d398a3-bde9-41d5-810e-a428a59cebb3",
+            "name": "ИИ · слой 1",
+            "enabled": true,
+            "locked": false,
+            "group": "",
+            "type": "overlay",
+            "textureId": "vus-film-19",
+            "opacity": 10,
+            "scale": 100,
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "flip": false,
+            "crop": 0,
+            "mode": "softlight",
+            "start": 0,
+            "end": 0,
+            "loop": true,
+            "speed": 1,
+            "offset": 0,
+            "fadeIn": 0,
+            "fadeOut": 0,
+            "random": false,
+            "proceduralSeed": 123
+          },
+          {
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "id": "982409c2-9232-4863-a5c9-a890494aa4f6",
+            "name": "ИИ · слой 2",
+            "enabled": true,
+            "locked": false,
+            "group": "",
+            "type": "overlay",
+            "textureId": "vus-light-06",
+            "opacity": 18,
+            "scale": 100,
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "flip": false,
+            "crop": 0,
+            "mode": "screen",
+            "start": 0,
+            "end": 0,
+            "loop": true,
+            "speed": 1,
+            "offset": 0,
+            "fadeIn": 0,
+            "fadeOut": 0,
+            "random": false,
+            "proceduralSeed": 123
+          }
+        ],
+        "background": "black",
+        "batchMode": "same",
+        "randomMin": 3,
+        "randomMax": 15,
+        "filename": "{name}_{index}",
+        "analysis": true,
+        "aiLocked": true
+      },
+      "finalCheck": {
+        "analysis": {
+          "mode": "sampled",
+          "samples": [
+            {
+              "frame": 3,
+              "time": 0.125,
+              "sourceTime": 0.125,
+              "mae": 18.50654513888889,
+              "maxDeviation": 100,
+              "ssim": 0.9798868521105656,
+              "psnr": 20.467487768486915,
+              "pHashDistance": 6
+            },
+            {
+              "frame": 9,
+              "time": 0.375,
+              "sourceTime": 0.375,
+              "mae": 18.515104166666667,
+              "maxDeviation": 110,
+              "ssim": 0.9771981526830801,
+              "psnr": 20.467153117080784,
+              "pHashDistance": 4
+            },
+            {
+              "frame": 15,
+              "time": 0.625,
+              "sourceTime": 0.625,
+              "mae": 18.592471064814816,
+              "maxDeviation": 96,
+              "ssim": 0.9769492646822553,
+              "psnr": 20.46691988783197,
+              "pHashDistance": 0
+            }
+          ],
+          "unmatchedTailSeconds": 0,
+          "sampleCount": 3,
+          "framesChecked": 3,
+          "resolution": {
+            "width": 320,
+            "height": 180
+          },
+          "fps": 24,
+          "perFrameReport": "/tmp/vus-strong-60LWrP/full-analysis-1794770744439.jsonl",
+          "mae": {
+            "mean": 18.538040123456792,
+            "min": 18.50654513888889,
+            "max": 18.592471064814816
+          },
+          "ssim": {
+            "mean": 0.9780114231586335,
+            "min": 0.9769492646822553,
+            "max": 0.9798868521105656
+          },
+          "psnr": {
+            "mean": 20.467186924466557,
+            "min": 20.46691988783197,
+            "max": 20.467487768486915
+          },
+          "maxPixelDeviation": {
+            "mean": 102,
+            "min": 96,
+            "max": 110
+          },
+          "pHashDistance": {
+            "mean": 3.3333333333333335,
+            "min": 0,
+            "max": 6
+          },
+          "audio": {
+            "available": true,
+            "seconds": 1,
+            "pearson": 0.9999977934416314,
+            "normalizedMAE": 0.00010546493530273437,
+            "notice": "Сравнение моно PCM 8 кГц, максимум 20 секунд с коррекцией скорости. Изменение громкости, задержка и нормализация влияют на результат; это не распознавание аудио."
+          },
+          "sha256Source": "bea596627b9a83fd5e4ae41887e9d168a6cc41f68d2b7081ad4e85ea3d5ccc5f",
+          "sha256Output": "2f72e6e17a9bb919abd8f108d9346b1b3da8bbf12ba3d465156dde0b16157820",
+          "notice": "Выборочный анализ. Кадры сопоставлены после нормализации FPS и применения карты монтажа. Разрешение анализа указано отдельно. Покадровые данные потоково записаны в JSONL; PSNR null означает ∞.",
+          "vmaf": {
+            "available": false,
+            "reason": "Сборка FFmpeg без libvmaf"
+          }
+        },
+        "audio": {
+          "available": true,
+          "meanDb": -21.2,
+          "peakDb": -17.7,
+          "scope": "первые 15 секунд"
+        },
+        "qc": {
+          "blackIntervals": [],
+          "luminanceJumps": 0,
+          "note": "Резкие изменения яркости могут быть монтажными склейками или намеренными эффектами."
+        }
+      }
+    }
+  ]
+}
