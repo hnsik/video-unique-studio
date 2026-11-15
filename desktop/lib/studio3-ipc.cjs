@@ -19,6 +19,15 @@ function register({handle,dialog,shell,getWindow,getTools,root,resultsRoot,selfT
  case 'previewCancel':s.previewService.cancel();return true;
  case 'retryCPU':{await s.performanceService.save({...s.performanceService.config().options,encoder:'cpu'});const j=s.queue.find(j=>j.id===data.id);if(j&&j.status==='error'){j.status='queued';delete j.error;s.drain();}return s.snapshot();}
  case 'aiConfig':return s.ai.config();
+ case 'aiDiagnosticsStatus':return s.ai.diagnostics.snapshot();
+ case 'aiDiagnosticsCancel':s.ai.diagnostics.cancel();return true;
+ case 'aiDiagnosticsStart':{
+  let consent=false;
+  if(data.generation){const providers=data.providers||Object.keys(require('./ai/providers.cjs').PROVIDERS);if(!Array.isArray(providers)||providers.length>6||providers.some(p=>!require('./ai/providers.cjs').PROVIDERS[p]))throw Error('Неверные провайдеры');const answer=await dialog.showMessageBox(getWindow(),{type:'question',buttons:['Отмена','Выполнить тест'],defaultId:0,cancelId:0,title:'Тест реальной генерации',message:'Отправить по одному запросу: '+providers.join(', ')+'?',detail:'До 2000 выходных токенов на запрос. Возможны списания по тарифу API; подписки на чат не заменяют API-баланс. Разрешения биллинга в настройках продолжают действовать. Используются только синтетические данные; после ответа проверяется короткий локальный экспорт.'});if(answer.response!==1)return null;consent=true;}
+  return s.ai.diagnostics.start({...data,consent});
+ }
+ case 'aiDiagnosticsExport':{const report=s.ai.diagnostics.snapshot();if(!report)throw Error('Сначала выполните диагностику');const d=await dialog.showSaveDialog(getWindow(),{defaultPath:'VideoUniqueStudio-AI-diagnostics.json',filters:[{name:'JSON',extensions:['json']}]});if(!d.canceled)await fs.writeFile(d.filePath,JSON.stringify(report,null,2));return !d.canceled;}
+
  case 'aiPreview':{const r=s.state.aiResults?.[data.id];if(!r)throw Error('Нет результата ИИ');if(r.preview?.path&&path.resolve(r.preview.path).startsWith(path.resolve(root,'preview')+path.sep)){try{await fs.access(r.preview.path);s.outputs.set(r.preview.id,r.preview.path);return r.preview;}catch{}}return s.previewService.request({id:data.id,settings:r.settings},false);}
  case 'aiModels':return s.ai.manager.models(data.provider,{force:!!data.force,workspace:s.ai.options().workspace});
  case 'aiOptions':return s.ai.saveOptions(data);
@@ -76,6 +85,6 @@ function register({handle,dialog,shell,getWindow,getTools,root,resultsRoot,selfT
  case 'openResults':return shell.openPath([...folders].includes(data.folder)?data.folder:resultsRoot);
  default:throw Error('Неизвестное действие');
  }};const heavy=['proxy','analyze','textureExport','animationExport','cacheClear','cacheBudget','generatorPreview','generate','textureTestExport'];return heavy.includes(action)?s.exclusive(action,execute):execute();});
- return{async media(id){const s=await studio();const a=s.assets.get(id),builtin=catalog.find(t=>t.id===id);return a?.path||s.outputs.get(id)||(builtin&&path.join(__dirname,'../assets/textures',builtin.category,id+'.png'));},async close(){if(studioPromise){const s=await studioPromise;s.closing=true;s.performanceService?.cancel();await s.previewService?.close();for(const j of s.ai?.jobs||[])s.ai.cancel(j.id);s.cancel();await s.taskChain;await s.save();s.textureAnalyzer?.close();s.performanceService?.close();}}};
+ return{async media(id){const s=await studio();const a=s.assets.get(id),builtin=catalog.find(t=>t.id===id);return a?.path||s.outputs.get(id)||(builtin&&path.join(__dirname,'../assets/textures',builtin.category,id+'.png'));},async close(){if(studioPromise){const s=await studioPromise;s.closing=true;s.performanceService?.cancel();s.ai?.diagnostics.cancel();await s.previewService?.close();for(const j of s.ai?.jobs||[])s.ai.cancel(j.id);s.cancel();await s.ai?.diagnostics.promise;await s.taskChain;await s.save();s.textureAnalyzer?.close();s.performanceService?.close();}}};
 }
 module.exports={register};

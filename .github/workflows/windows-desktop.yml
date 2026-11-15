@@ -39,8 +39,8 @@ jobs:
           $installer = Get-ChildItem desktop-dist -Filter '*Setup*.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Installer not found' }
           $installRoot = Join-Path $env:RUNNER_TEMP 'VUSInstalled'
-          $oldInstaller = Join-Path $env:RUNNER_TEMP 'VUS-3.1.0-Setup.exe'
-          Invoke-WebRequest 'https://github.com/hnsik/video-unique-studio/releases/download/windows-v3-31/VideoUniqueStudio-3.0-Setup.exe' -OutFile $oldInstaller
+          $oldInstaller = Join-Path $env:RUNNER_TEMP 'VUS-3.2.0-Setup.exe'
+          Invoke-WebRequest 'https://github.com/hnsik/video-unique-studio/releases/download/windows-v3-32/VideoUniqueStudio-3.0-Setup.exe' -OutFile $oldInstaller
           $oldInstall = Start-Process -FilePath $oldInstaller -ArgumentList @('/S', "/D=$installRoot") -Wait -PassThru
           if ($oldInstall.ExitCode -ne 0) { throw 'Old installation failed' }
           $oldExe = Join-Path $installRoot 'Video Unique Studio.exe'
@@ -58,6 +58,8 @@ jobs:
           Copy-Item (Join-Path $profile 'fixture.mp4') $sentinel
           $prior.textures += @{ id='upgrade-sentinel'; path=$sentinel; name='User texture'; category='My textures'; width=160; height=120; codec='h264'; kind='custom'; dynamic=$true }
           $prior.presets += @{ id='upgrade-sentinel'; name='User preset'; settings=$prior.settings }
+          if (-not $prior.aiOptions) { $prior | Add-Member aiOptions ([pscustomobject]@{}) }
+          $prior.aiOptions | Add-Member -Force models ([pscustomobject]@{gemini='gemini-preservation-fixture'})
           $prior | ConvertTo-Json -Depth 100 | Set-Content $stateFile -Encoding utf8NoBOM
           $priorHash = (Get-FileHash $stateFile -Algorithm SHA256).Hash
           $textureHash = (Get-FileHash $sentinel -Algorithm SHA256).Hash
@@ -96,8 +98,9 @@ jobs:
           $updated = Get-Content $stateFile -Raw | ConvertFrom-Json
           if (-not ($updated.presets | Where-Object id -eq 'upgrade-sentinel') -or -not ($updated.textures | Where-Object id -eq 'upgrade-sentinel')) { throw 'Upgrade lost user records' }
           if ((Get-FileHash $sentinel -Algorithm SHA256).Hash -ne $textureHash) { throw 'Upgrade changed user texture' }
-          if ((Get-FileHash (Join-Path $profile 'backups/3.2.0-state.json') -Algorithm SHA256).Hash -ne $priorHash) { throw 'Upgrade backup mismatch' }
-          @{ ok=$true; from='3.1.0'; to='3.2.0'; presetPreserved=$true; texturePreserved=$true; exactStateBackup=$true } | ConvertTo-Json | Set-Content desktop-dist/studio3-upgrade.json
+          if ((Get-FileHash (Join-Path $profile 'backups/3.2.1-state.json') -Algorithm SHA256).Hash -ne $priorHash) { throw 'Upgrade backup mismatch' }
+          if ($updated.aiOptions.models.gemini -ne 'gemini-preservation-fixture') { throw 'Upgrade lost selected AI model' }
+          @{ modelPreserved=$true; ok=$true; from='3.2.0'; to='3.2.1'; presetPreserved=$true; texturePreserved=$true; exactStateBackup=$true } | ConvertTo-Json | Set-Content desktop-dist/studio3-upgrade.json
           Copy-Item $report3 desktop-dist/
           Copy-Item "$report3.png" desktop-dist/ -ErrorAction SilentlyContinue
           $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLower()
@@ -154,11 +157,11 @@ jobs:
           cat > /tmp/vus-release-notes.md <<'NOTES'
           Windows 10/11 x64 installer for Video Unique Studio.
 
-          Version 3.2.0 Full Pipeline: six AI provider adapters (Gemini, OpenAI, Claude, DeepSeek, Groq, OpenRouter), cached model discovery, explicit model allowlists, bounded retries/Retry-After, request budgets and opt-in billing. Source inspection, PCM analysis, texture controls and invariant metrics are cached with file-change invalidation. Adds exact full-resolution frame preview, stale-preview removal, restored AI previews, detailed phase timings and module diagnostics. Existing export effects and encoding settings are preserved.
+          Version 3.2.1: separates catalog, model compatibility and real generation diagnostics for all six providers. Adds Check all AI, cancellable two-request catalog queue, request coalescing, cached dates, compatibility metadata, explicit per-provider generation consent and structured redacted HTTP errors. Test generation validates a JSON plan and processes synthetic video locally. Selected models, keys and presets are preserved.
 
-          Live provider requests need the user's keys and were not executed during development. HTTP contracts, error recovery, billing restrictions and cache behavior are tested with fixtures. Paid generation in diagnostics is disabled unless explicitly enabled by the user. Physical RX570/AMD driver performance remains unverified.
+          Live unauthenticated catalog probes: OpenRouter 200 (467 models), OpenAI/Claude/DeepSeek 401, Gemini/Groq 403. These are not authenticated account checks. No live generation was performed. Provider contracts, fallback, billing guards and JSON-to-video processing are covered with fixtures plus real FFmpeg processing. See desktop/AI-DIAGNOSTICS.md for evidence and limitations.
 
-          This installer was installed over 3.1.0 on a Windows runner. Tests verify presets/custom textures and an exact settings backup, native export, pixel parity, quick/exact preview, cached texture analysis, local AI and real CPU/RAM/progress counters. See desktop/FULL-PIPELINE.md for measurements and limitations.
+          The installer was installed over 3.2.0 on a Windows runner. Verification covers the diagnostics table, quick/exact preview, export, model setting preservation, custom preset/texture and exact state backup.
 
           FFmpeg is distributed under GPLv3. The corresponding upstream FFmpeg snapshot is attached as FFmpeg-9.0.2-Source.zip; see FFmpeg-SOURCES.txt and the installed licenses for the build configuration and provider details.
 
@@ -167,6 +170,6 @@ jobs:
           if gh release view "$RELEASE_TAG" --repo hnsik/video-unique-studio >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --clobber
           else
-            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.2.0 — Full Pipeline" --notes-file /tmp/vus-release-notes.md
+            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.2.1 — AI Diagnostics" --notes-file /tmp/vus-release-notes.md
           fi
 

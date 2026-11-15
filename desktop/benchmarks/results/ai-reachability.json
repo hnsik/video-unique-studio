@@ -1,0 +1,56 @@
+[
+  {
+    "provider": "gemini",
+    "route": "https://generativelanguage.googleapis.com/v1beta/models",
+    "credentials": "none",
+    "generation": "not requested",
+    "status": 403,
+    "message": "{\n  \"error\": {\n    \"code\": 403,\n    \"message\": \"Permission denied on the service.\",\n    \"status\": \"PERMISSION_DENIED\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.ErrorInfo\",\n        \"reason\": \"ACCESS_DENIED\",\n        \"domain\": \"googleapis.com\",\n        \"metadata\": {\n          \"service\": \"generativelanguage.googleapis.com\"\n        }\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.LocalizedMessage\",\n        \"locale\": \"en-US\",\n        \"message\": \"Permission denied on the service.\"\n      }\n    ]\n  }\n}\n",
+    "seconds": 5.929
+  },
+  {
+    "provider": "openai",
+    "route": "https://api.openai.com/v1/models",
+    "credentials": "none",
+    "generation": "not requested",
+    "status": 401,
+    "message": "{\n  \"error\": {\n    \"message\": \"Missing bearer authentication in header\",\n    \"type\": \"invalid_request_error\",\n    \"param\": null,\n    \"code\": null\n  }\n}",
+    "seconds": 6.582
+  },
+  {
+    "provider": "claude",
+    "route": "https://api.anthropic.com/v1/models",
+    "credentials": "none",
+    "generation": "not requested",
+    "status": 401,
+    "message": "{\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"x-api-key header is required\"},\"request_id\":\"req_011Ch5CqLbB73P1dGjP9ZxhK\"}",
+    "seconds": 4.667
+  },
+  {
+    "provider": "deepseek",
+    "route": "https://api.deepseek.com/models",
+    "credentials": "none",
+    "generation": "not requested",
+    "status": 401,
+    "message": "{\"error\":{\"message\":\"Authentication Fails (governor) (request_id: bd98e2c5-f45f-4951-b7a3-d092cb165d74)\",\"type\":\"authentication_error\",\"param\":null,\"code\":\"invalid_request_error\"}}",
+    "seconds": 4.41
+  },
+  {
+    "provider": "groq",
+    "route": "https://api.groq.com/openai/v1/models",
+    "credentials": "none",
+    "generation": "not requested",
+    "status": 403,
+    "message": "error code: 1010\n",
+    "seconds": 3.927
+  },
+  {
+    "provider": "openrouter",
+    "route": "https://openrouter.ai/api/v1/models",
+    "credentials": "none",
+    "generation": "not requested",
+    "status": 200,
+    "modelCount": 467,
+    "seconds": 3.196
+  }
+]
