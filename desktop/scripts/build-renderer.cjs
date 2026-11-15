@@ -4,6 +4,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 (async () => {
   const root = path.resolve(__dirname, "../..");
+  await require("../lib/textures.cjs").buildLibrary(path.join(root,"desktop/assets/textures"));
   const result = spawnSync(
     process.execPath,
     [path.join(root, "node_modules/next/dist/bin/next"), "build"],
@@ -29,3 +30,4 @@ const { spawnSync } = require("node:child_process");
   console.error(error);
   process.exitCode = 1;
 });
+

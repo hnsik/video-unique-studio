@@ -1,0 +1,39 @@
+'use strict';
+const {Studio,DEFAULT,LAYER,validate}=require('./studio3.cjs'),{catalog,kinds,pixels,png}=require('./textures.cjs');
+const path=require('node:path'),fs=require('node:fs/promises'),{randomUUID}=require('node:crypto');
+function register({handle,dialog,shell,getWindow,getTools,root,resultsRoot,selfTest=false,finishTest}){
+ let studioPromise;const folders=new Set([resultsRoot]);
+ const studio=async()=>{if(!studioPromise)studioPromise=(async()=>{const s=new Studio({tools:getTools(),root,onEvent:value=>getWindow()?.webContents.send('studio3:update',value)});await s.init();return s;})();return studioPromise;};
+ handle('studio3:call',async(_e,action,data={})=>{const s=await studio();
+ switch(action){
+ case 'init':return{...s.snapshot(),defaults:DEFAULT,layerDefaults:LAYER,kinds,folder:resultsRoot,selfTest};
+ case 'testFixture':{if(!selfTest)throw Error('Тестовый режим отключён');const file=path.join(root,'fixture.mp4');await s.run(s.tools.ffmpeg,['-v','error','-y','-f','lavfi','-i','testsrc2=s=160x120:r=12:d=1','-f','lavfi','-i','sine=frequency=440:duration=1','-c:v','libx264','-pix_fmt','yuv420p','-c:a','aac','-shortest',file]);return s.importVideo([file]);}
+ case 'testFinish':{if(!selfTest)throw Error('Тестовый режим отключён');return finishTest(data);}
+ case 'import':{const choice=await dialog.showOpenDialog(getWindow(),{title:data.texture?'Импорт текстур':'Импорт видео',properties:['openFile','multiSelections'],filters:[{name:'Медиа',extensions:data.texture?['png','jpg','jpeg','webp','bmp','tif','tiff','mp4','mov','webm']:['mp4','mov','mkv','webm','avi','m4v']}]});if(choice.canceled)return[];return data.texture?s.importTextures(choice.filePaths,String(data.category||'Мои текстуры')):s.importVideo(choice.filePaths);}
+ case 'folder':{const choice=await dialog.showOpenDialog(getWindow(),{properties:['openDirectory','createDirectory']});if(choice.canceled)return null;folders.add(choice.filePaths[0]);return choice.filePaths[0];}
+ case 'generate':return s.generate(data);
+ case 'texturePreview':{const t=s.texture(data.id);if(t.path)return{url:'vus://studio/media/'+t.id};return{url:'data:image/png;base64,'+png(pixels(t,180,320),180,320).toString('base64')};}
+ case 'export':if(!folders.has(data.folder))throw Error('Выберите папку экспорта');return s.enqueue(data.ids,data.settings,data.folder);
+ case 'preview':{if(s.running)throw Error('Дождитесь завершения текущего задания');const source=s.assets.get(data.id);if(!source)throw Error('Выберите видео');s.cancelled=false;s.running=true;try{const folder=path.join(root,'preview');await fs.mkdir(folder,{recursive:true});return await s.process({source,folder,settings:{...data.settings,width:Math.max(2,Math.round((data.settings.width||source.probe.streams.find(x=>x.codec_type==='video').width)*Math.min(1,640/Math.max(data.settings.width||source.probe.streams.find(x=>x.codec_type==='video').width,data.settings.height||source.probe.streams.find(x=>x.codec_type==='video').height))/2)*2),height:Math.max(2,Math.round((data.settings.height||source.probe.streams.find(x=>x.codec_type==='video').height)*Math.min(1,640/Math.max(data.settings.width||source.probe.streams.find(x=>x.codec_type==='video').width,data.settings.height||source.probe.streams.find(x=>x.codec_type==='video').height))/2)*2),analysis:false,filename:'preview-'+randomUUID()},index:1},true);}finally{s.running=false;s.emit();}}
+ case 'pause':s.paused=!s.paused;s.emit();if(!s.paused)s.drain();return s.snapshot();
+ case 'cancel':s.cancel();return true;
+ case 'retry':{const j=s.queue.find(x=>x.id===data.id);if(j&&['error','cancelled'].includes(j.status)){j.status='queued';delete j.error;s.drain();}return s.snapshot();}
+ case 'removeJob':s.queue=s.queue.filter(x=>x.id!==data.id||x.status==='running');s.emit();return s.snapshot();
+ case 'moveJob':{const i=s.queue.findIndex(x=>x.id===data.id),j=i+data.delta;if(i>=0&&j>=0&&j<s.queue.length&&s.queue[i].status==='queued'&&s.queue[j].status==='queued')[s.queue[i],s.queue[j]]=[s.queue[j],s.queue[i]];s.emit();return s.snapshot();}
+ case 'settings':s.state.settings=validate(data.settings);s.state.theme=data.theme==='light'?'light':'dark';await s.save();return true;
+ case 'presetSave':{const p={id:data.id||randomUUID(),name:String(data.name||'Пресет').slice(0,120),settings:validate(data.settings)};const i=s.state.presets.findIndex(x=>x.id===p.id);if(i<0)s.state.presets.push(p);else s.state.presets[i]=p;await s.save();return s.snapshot();}
+ case 'presetDelete':s.state.presets=s.state.presets.filter(x=>x.id!==data.id);if(s.state.defaultPreset===data.id)s.state.defaultPreset=null;await s.save();return s.snapshot();
+ case 'presetDefault':s.state.defaultPreset=data.id;await s.save();return s.snapshot();
+ case 'presetExport':{const p=s.state.presets.find(x=>x.id===data.id);if(!p)throw Error('Пресет не найден');const c=await dialog.showSaveDialog(getWindow(),{defaultPath:p.name+'.json',filters:[{name:'JSON',extensions:['json']}]});if(!c.canceled)await fs.writeFile(c.filePath,JSON.stringify(p,null,2));return true;}
+ case 'presetImport':{const c=await dialog.showOpenDialog(getWindow(),{properties:['openFile'],filters:[{name:'JSON',extensions:['json']}]});if(c.canceled)return s.snapshot();if((await fs.stat(c.filePaths[0])).size>1000000)throw Error('Пресет слишком большой');const p=JSON.parse(await fs.readFile(c.filePaths[0],'utf8'));s.state.presets.push({id:randomUUID(),name:String(p.name||'Импорт').slice(0,120),settings:validate(p.settings)});await s.save();return s.snapshot();}
+ case 'favorite':s.state.favorites=s.state.favorites.includes(data.id)?s.state.favorites.filter(x=>x!==data.id):[...s.state.favorites,data.id];await s.save();return s.snapshot();
+ case 'textureEdit':{const t=s.state.textures.find(x=>x.id===data.id);if(!t)throw Error('Можно изменять только собственные текстуры');if(data.remove){s.state.textures=s.state.textures.filter(x=>x.id!==data.id);s.assets.delete(data.id);}else{if(data.name)t.name=String(data.name).slice(0,120);if(data.category)t.category=String(data.category).slice(0,120);}await s.save();return s.snapshot();}
+ case 'textureExport':{const t=s.texture(data.id);const c=await dialog.showSaveDialog(getWindow(),{defaultPath:(t.name||'texture')+'.png',filters:[{name:'PNG',extensions:['png']}]});if(!c.canceled){if(t.path&&!t.procedural)await s.run(s.tools.ffmpeg,['-v','error','-y','-i',t.path,'-frames:v','1',c.filePath]);else await fs.writeFile(c.filePath,png(pixels(t,t.width||1080,t.height||1920),t.width||1080,t.height||1920));}return true;}
+ case 'animationExport':{const t=s.texture(data.id);if(!t.procedural&&!catalog.some(x=>x.id===t.id))throw Error('Выберите процедурную текстуру');const c=await dialog.showSaveDialog(getWindow(),{defaultPath:(t.name||'texture')+'.mov',filters:[{name:'MOV с альфа-каналом',extensions:['mov']}]});if(!c.canceled)await s.renderTexture({...t,width:Math.min(1080,t.width||1080),height:Math.min(1920,t.height||1920)},c.filePath,true);return true;}
+ case 'analyze':{if(s.running)throw Error('Дождитесь завершения экспорта');const c=await dialog.showOpenDialog(getWindow(),{title:'Выберите обработанное видео',properties:['openFile']});if(c.canceled)return null;const source=s.assets.get(data.id);if(!source)throw Error('Выберите исходник');s.cancelled=false;return s.analyze(source.path,c.filePaths[0],{rate:data.rate||1});}
+ case 'openResults':return shell.openPath([...folders].includes(data.folder)?data.folder:resultsRoot);
+ default:throw Error('Неизвестное действие');
+ }});
+ return{async media(id){const s=await studio();const a=s.assets.get(id);return a?.path||s.outputs.get(id);},async close(){if(studioPromise)(await studioPromise).cancel();}};
+}
+module.exports={register};

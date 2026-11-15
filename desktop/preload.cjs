@@ -30,3 +30,9 @@ contextBridge.exposeInMainWorld("videoUniqueDesktop", {
   selfTestFixture: () => invoke("selftest:fixture"),
   selfTestFinish: (result) => invoke("selftest:finish", result),
 });
+
+
+contextBridge.exposeInMainWorld('studio3', {
+ call:(action,data)=>invoke('studio3:call',action,data),
+ onUpdate:callback=>{const listener=(_event,data)=>callback(data);ipcRenderer.on('studio3:update',listener);return()=>ipcRenderer.removeListener('studio3:update',listener);}
+});

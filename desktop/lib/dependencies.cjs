@@ -87,6 +87,7 @@ async function candidates(
 ) {
   const ext = platform === "win32" ? ".exe" : "";
   const result = [];
+  if(process.resourcesPath) result.push({ffmpeg:path.join(process.resourcesPath,'ffmpeg','ffmpeg'+ext),ffprobe:path.join(process.resourcesPath,'ffmpeg','ffprobe'+ext),source:'bundled'});
   const config = await readConfig(root);
   if (config?.ffmpeg && config?.ffprobe)
     result.push({
@@ -328,3 +329,4 @@ module.exports = {
   downloadArchive,
   saveConfig,
 };
+

@@ -22,8 +22,16 @@ const { ensureTools } = require("../lib/dependencies.cjs");
       process.env.GITHUB_PATH,
       path.dirname(tools.ffmpeg) + "\n",
     );
+  if(process.env.VUS_BUNDLE_TOOLS==='1') {
+    const target=path.join(__dirname,'../bundled-tools');
+    await fs.mkdir(target,{recursive:true});
+    await fs.copyFile(tools.ffmpeg,path.join(target,'ffmpeg.exe'));
+    await fs.copyFile(tools.ffprobe,path.join(target,'ffprobe.exe'));
+    for(const name of ['LICENSE','SOURCE-AND-LICENSE.txt']) await fs.copyFile(path.join(path.dirname(tools.ffmpeg),name),path.join(target,name));
+  }
   console.log(tools.version);
 })().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
