@@ -1,0 +1,3 @@
+'use strict';
+const fs=require('node:fs/promises'),path=require('node:path'),{execFileSync}=require('node:child_process'),AdmZip=require('adm-zip');
+(async()=>{const root=path.resolve(__dirname,'../..'),out=path.join(root,'desktop-dist');await fs.mkdir(out,{recursive:true});const source=path.join(out,'VideoUniqueStudio-3.0-Source.zip');execFileSync('git',['archive','--format=zip','--output='+source,'HEAD'],{cwd:root});const zip=new AdmZip(source);zip.addLocalFolder(path.join(root,'desktop/assets/textures'),'desktop/assets/textures');zip.writeZip(source);const textures=new AdmZip();textures.addLocalFolder(path.join(root,'desktop/assets/textures'));textures.writeZip(path.join(out,'VideoUniqueStudio-110-Textures.zip'));})();

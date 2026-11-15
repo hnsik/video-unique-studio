@@ -30,6 +30,8 @@ jobs:
       - run: npm test --prefix desktop
       - name: Build Windows x64 installer
         run: npm run dist:win --prefix desktop
+      - name: Package sources and offline texture library
+        run: node desktop/scripts/package-source.cjs
       - name: Install and verify packaged app, bundled tools and real native export
         shell: pwsh
         run: |
@@ -74,6 +76,8 @@ jobs:
           name: Video-Unique-Studio-Windows-x64
           path: |
             desktop-dist/*Setup*.exe
+            desktop-dist/*Source.zip
+            desktop-dist/*Textures.zip
             desktop-dist/*.sha256
             desktop-dist/desktop-smoke-*.json
             desktop-dist/studio3-smoke*

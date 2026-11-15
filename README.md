@@ -1,3 +1,5 @@
+> Windows 3.0 beta: [статус функций, ограничения и инструкция](desktop/V3-STATUS.md). Стабильная версия 2.2 сохранена.
+
 # Video Unique Studio Advanced 2.0
 
 Локальный редактор видео на Next.js и FFmpeg.wasm. Видео не отправляются на сервер. GitHub → Vercel; `npm ci`, `npm test`, `npm run build`.
@@ -43,3 +45,4 @@ HDR PQ/HLG отклоняется с предложением предварит
 ## Windows-программа
 
 Нативная версия с установщиком, автоматическим поиском/загрузкой FFmpeg и FFprobe: [desktop/README.md](desktop/README.md). Среда запуска входит в установщик; отдельные Node.js/Python не нужны. Веб-версия сохраняет обработку FFmpeg.wasm.
+
