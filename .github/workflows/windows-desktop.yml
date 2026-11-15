@@ -67,6 +67,9 @@ jobs:
           Get-Content $report3
           $r3 = Get-Content $report3 -Raw | ConvertFrom-Json
           if (-not $r3.ok -or $p3.ExitCode -ne 0) { throw 'V3 installed app test failed' }
+          foreach ($reportExport in $r3.textureAnalyzer.exports) {
+            Copy-Item $reportExport.path desktop-dist/
+          }
           Copy-Item $report3 desktop-dist/
           Copy-Item "$report3.png" desktop-dist/ -ErrorAction SilentlyContinue
           $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLower()
@@ -82,13 +85,16 @@ jobs:
             desktop-dist/FFmpeg-SOURCES.txt
             desktop-dist/desktop-smoke-*.json
             desktop-dist/studio3-smoke*
+            desktop-dist/texture-report.*
           if-no-files-found: error
           retention-days: 30
       - name: Save UI verification separately
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: Studio3-UI-verification
-          path: desktop-dist/studio3-smoke*
+          path: |
+            desktop-dist/studio3-smoke*
+            desktop-dist/texture-report.*
           if-no-files-found: error
       - name: Upload diagnostics after failure
         if: failure()
@@ -118,9 +124,9 @@ jobs:
           cat > /tmp/vus-release-notes.md <<'NOTES'
           Windows 10/11 x64 installer for Video Unique Studio.
 
-          Includes application runtime, offline FFmpeg/FFprobe and 110 procedural textures. Version 3.0 adds timeline frame operations, editable multi-layer composition, texture generation, presets, batch export, similarity analysis and quality control. See desktop/USER-GUIDE.md and desktop/V3-STATUS.md for usage and limits. All media processing runs locally.
+          Includes application runtime, offline FFmpeg/FFprobe and 110 procedural textures. Version 3.0.1 integrates Texture Effectiveness Analyzer: per-card tests, pre-encode measurements, independent control exports, comparison tables, VMAF when available, SQLite history, automatic selection and CSV/JSON/HTML/PDF reports. Existing timeline editing, layers, presets and batch export are preserved. See desktop/USER-GUIDE.md and desktop/V3-STATUS.md for usage and limits. All media processing runs locally.
 
-          This exact installer was installed and exercised on a Windows runner: bundled components and reuse, legacy video/audio export, metadata cleanup, frame metrics, Chromium playback, and the 3.0 interface with five layers, interior frame editing, generator preview, preset save and final export. This is not a physical Ryzen/RX 570 or separate Windows 10 benchmark.
+          This exact installer was installed and exercised on a Windows runner: bundled components and reuse, legacy video/audio export, metadata cleanup, frame metrics, Chromium playback, and the 3.0 interface with five layers, interior frame editing, generator preview, preset save and final export. The installed analyzer additionally performs a full texture test and produces all four report formats, including a real PDF. This is not a physical Ryzen/RX 570 or separate Windows 10 benchmark.
 
           FFmpeg is distributed under GPLv3. The corresponding upstream FFmpeg snapshot is attached as FFmpeg-9.0.2-Source.zip; see FFmpeg-SOURCES.txt and the installed licenses for the build configuration and provider details.
 
@@ -129,6 +135,6 @@ jobs:
           if gh release view "$RELEASE_TAG" --repo hnsik/video-unique-studio >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --clobber
           else
-            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.0 — Windows x64" --notes-file /tmp/vus-release-notes.md
+            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.0.1 — Texture Analyzer" --notes-file /tmp/vus-release-notes.md
           fi
 

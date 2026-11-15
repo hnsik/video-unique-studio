@@ -1,3 +1,5 @@
+> Обновление 3.0.1: [Texture Effectiveness Analyzer — тестирование и сравнение текстур](desktop/TEXTURE-ANALYZER.md).
+
 > Windows 3.0: [руководство](desktop/USER-GUIDE.md), [реализованные функции и ограничения](desktop/V3-STATUS.md), [протокол проверок](desktop/TEST-RESULTS.md). Прежний редактор сохранён. Установщик и исходники — в GitHub Releases. Далее описана прежняя веб-версия; её ограничения по размеру файлов не относятся к настольной 3.0.
 
 # Video Unique Studio Advanced 2.0
