@@ -1,0 +1,34 @@
+'use strict';
+const fs=require('node:fs/promises'),path=require('node:path'),{randomUUID}=require('node:crypto');
+const creative=require('./creative.cjs'),timeline=require('./timeline.cjs'),{validate,fpsOf,LAYER,metrics}=require('./studio3.cjs');
+function timing(source,s){const fps=s.fps||fpsOf(source.probe),edits=creative.edits(s,fps),map=timeline.segments(+source.probe.format.duration,fps,edits),edited=map.reduce((n,e)=>n+e.end-e.start,0),duration=edited/s.speed+s.extra+s.frameDelta/fps;if(duration<=0)throw Error('Неверная длительность');return{fps,edits,map,duration,rate:s.durationMethod==='slow'?edited/duration:s.speed};}
+async function audioPreview(studio,{id,settings,time=0,duration=8}){
+ const source=studio.assets.get(id);if(!source||source.kind!=='video')throw Error('Выберите видео');const s=validate(settings),t=timing(source,s);if(!Number.isFinite(time)||time<0||time>=t.duration||!Number.isFinite(duration)||duration<=0||duration>30)throw Error('Предпросмотр звука: выберите интервал до 30 секунд внутри результата');duration=Math.min(duration,t.duration-time);
+ const dir=path.join(studio.root,'preview');await fs.mkdir(dir,{recursive:true});const created=[],result={time,duration};
+ try{for(const kind of ['before','after']){const cfg=kind==='before'?validate({...s,volume:1,mute:false,normalize:false,fadeIn:0,fadeOut:0,creative:{...creative.DEFAULT,reverse:s.creative.reverse,reverseStart:s.creative.reverseStart,reverseEnd:s.creative.reverseEnd,reverseAudio:s.creative.reverseAudio}}):s;
+ const args=['-v','error','-y','-filter_complex_threads','1','-protocol_whitelist','file,pipe','-i',source.path],graph=[],audio=source.probe.streams.find(x=>x.codec_type==='audio'),video=source.probe.streams.find(x=>x.codec_type==='video'),offset=Number(audio?.start_time||0)-Number(video.start_time||0),input=audio&&!cfg.mute&&t.edits.length?timeline.compileAudio(graph,t.map,t.fps,offset):'0:a';
+ const has=await creative.audioGraph(studio,cfg,args,graph,source,input,t.rate,t.duration,t.edits.length?0:offset/t.rate,1);
+ if(!has)graph.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${t.duration}[outa]`);
+ graph.push(`[outa]atrim=start=${time}:duration=${duration},asetpts=PTS-STARTPTS[previewa]`);
+ const key=randomUUID(),file=path.join(dir,key+'.wav');created.push(file);
+ await studio.run(studio.tools.ffmpeg,[...args,'-filter_complex',graph.join(';'),'-map','[previewa]','-vn','-c:a','pcm_s16le','-ar','48000','-ac','2','-t',String(duration),file]);studio.outputs.set(key,file);result[kind]={id:key,path:file,silent:!has};}
+ await require('./cache.cjs').prune(studio.root,(studio.state.cacheMB||1024)*1048576,created);return result;
+ }catch(e){for(const file of created)await fs.rm(file,{force:true});throw e;}
+}
+async function contribution(studio,{id,settings}){
+ const source=studio.assets.get(id);if(!source||source.kind!=='video')throw Error('Выберите видео');const s=validate(settings),t=timing(source,s),v=source.probe.streams.find(x=>x.codec_type==='video'),rot=Math.abs(v.side_data_list?.find(x=>x.rotation)?.rotation||0)%180===90,ow=s.width||(rot?v.height:v.width),oh=s.height||(rot?v.width:v.height),scale=Math.min(1,320/Math.max(ow,oh)),w=Math.max(2,Math.round(ow*scale/2)*2),h=Math.max(2,Math.round(oh*scale/2)*2),frames=[...new Set([.1,.5,.9].map(p=>Math.max(0,Math.floor(t.duration*t.fps*p)-1)))],dir=await fs.mkdtemp(path.join(studio.root,'layer-analysis-'));
+ const cfg={...s,width:w,height:h,analysis:false,mute:true,qcMode:'probe'},started=Date.now();
+ try{const render=async(settings,name)=>{const file=path.join(dir,name+'.mkv');await studio.process({source,settings,folder:dir,measurement:{file,frames,limitFrames:frames.length}});return file;};const all=await render(cfg,'all'),full=[];for(let i=0;i<frames.length;i++)full.push(await studio.frame(all,i/t.fps,w,h));const rows=[];
+ for(let index=0;index<s.layers.length;index++){if(studio.cancelled)throw Error('Анализ отменён');const l=s.layers[index];studio.onEvent({creativeStage:`Вклад слоя ${index+1}/${s.layers.length}: ${l.name}`});if(!l.enabled||!l.opacity){rows.push({id:l.id,name:l.name,mae:0,ssim:1,status:'Слой отключён'});continue;}const without=await render({...cfg,layers:cfg.layers.map((x,i)=>i===index?{...x,enabled:false}:x)},'without-'+index),samples=[];for(let i=0;i<frames.length;i++)samples.push({time:frames[i]/t.fps,...metrics(full[i],await studio.frame(without,i/t.fps,w,h),w,h)});const mae=samples.reduce((n,x)=>n+x.mae,0)/samples.length,ssim=samples.reduce((n,x)=>n+x.ssim,0)/samples.length;rows.push({id:l.id,name:l.name,mae,ssim,samples,status:mae===0?'Нет вклада на проверенных кадрах':'Измерено'});}
+ return{rows,width:w,height:h,times:frames.map(n=>n/t.fps),seconds:(Date.now()-started)/1000,note:'Сравнение всей композиции с композицией без одного слоя, до кодирования. Три выборочных кадра. Вклады зависят от порядка и не складываются; отсутствие эффекта здесь не доказывает его отсутствие во всём видео.'};
+ }finally{await fs.rm(dir,{recursive:true,force:true});}
+}
+async function importLogos(s,files){if(files.length>50||files.some(f=>! /\.(png|jpe?g|webp|bmp|tiff?)$/i.test(f)))throw Error('Логотип: до 50 изображений PNG/JPEG/WebP/BMP/TIFF');const rows=await s.importTextures(files,'Логотипы');for(const t of rows)s.state.logos.push({id:randomUUID(),name:t.name,layer:{...LAYER,keepAspect:true,name:t.name,type:'foreground',textureId:t.id,scale:15,opacity:100,x:35,y:-35}});await s.save();return s.snapshot();}
+async function resource(s,{kind,id,name,remove,layer}){const key={lut:'luts',audio:'audioLibrary',logo:'logos'}[kind];if(!key)throw Error('Неизвестная библиотека');const item=s.state[key].find(x=>x.id===id);if(!item||item.builtin)throw Error('Выберите собственный ресурс');if(remove){s.state[key]=s.state[key].filter(x=>x.id!==id);}else{if(name!==undefined){if(typeof name!=='string'||!name.trim())throw Error('Введите название');item.name=name.trim().slice(0,120);}if(layer&&kind==='logo'){item.layer=validate({layers:[layer]}).layers[0];item.layer.keepAspect=true;}}await s.save();return s.snapshot();}
+async function clear(s,kind,ids){
+ if(kind==='completed'){s.queue=s.queue.filter(j=>j.status!=='done');await s.save();s.emit();return s.snapshot();}
+ if(kind!=='sources')throw Error('Неверный тип очистки');const selected=new Set(ids||[...s.assets.values()].filter(x=>x.kind==='video').map(x=>x.id));
+ if(s.tasks.some(t=>t.status==='running')||s.queue.some(j=>selected.has(j.source.id)&&['queued','running'].includes(j.status))||s.ai?.jobs.some(j=>['queued','running'].includes(j.status)))throw Error('Сначала завершите или отмените обработку и уберите ожидающие задания из очереди');
+ s.previewService?.cancel();await s.previewService?.chain.catch(()=>{});for(const id of selected){if(s.assets.get(id)?.kind==='video')s.assets.delete(id);delete s.state.aiResults?.[id];}await s.save();s.emit();return s.snapshot();
+}
+module.exports={timing,audioPreview,contribution,importLogos,resource,clear};

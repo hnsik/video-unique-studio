@@ -39,8 +39,8 @@ jobs:
           $installer = Get-ChildItem desktop-dist -Filter '*Setup*.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Installer not found' }
           $installRoot = Join-Path $env:RUNNER_TEMP 'VUSInstalled'
-          $oldInstaller = Join-Path $env:RUNNER_TEMP 'VUS-3.2.2-Setup.exe'
-          Invoke-WebRequest 'https://github.com/hnsik/video-unique-studio/releases/download/windows-v3-35/VideoUniqueStudio-3.0-Setup.exe' -OutFile $oldInstaller
+          $oldInstaller = Join-Path $env:RUNNER_TEMP 'VUS-3.2.3-Setup.exe'
+          Invoke-WebRequest 'https://github.com/hnsik/video-unique-studio/releases/download/windows-v3-37/VideoUniqueStudio-3.0-Setup.exe' -OutFile $oldInstaller
           $oldInstall = Start-Process -FilePath $oldInstaller -ArgumentList @('/S', "/D=$installRoot") -Wait -PassThru
           if ($oldInstall.ExitCode -ne 0) { throw 'Old installation failed' }
           $oldExe = Join-Path $installRoot 'Video Unique Studio.exe'
@@ -98,9 +98,9 @@ jobs:
           $updated = Get-Content $stateFile -Raw | ConvertFrom-Json
           if (-not ($updated.presets | Where-Object id -eq 'upgrade-sentinel') -or -not ($updated.textures | Where-Object id -eq 'upgrade-sentinel')) { throw 'Upgrade lost user records' }
           if ((Get-FileHash $sentinel -Algorithm SHA256).Hash -ne $textureHash) { throw 'Upgrade changed user texture' }
-          if ((Get-FileHash (Join-Path $profile 'backups/3.2.3-state.json') -Algorithm SHA256).Hash -ne $priorHash) { throw 'Upgrade backup mismatch' }
+          if ((Get-FileHash (Join-Path $profile 'backups/3.3.0-state.json') -Algorithm SHA256).Hash -ne $priorHash) { throw 'Upgrade backup mismatch' }
           if ($updated.aiOptions.models.gemini -ne 'gemini-preservation-fixture') { throw 'Upgrade lost selected AI model' }
-          @{ modelPreserved=$true; ok=$true; from='3.2.2'; to='3.2.3'; presetPreserved=$true; texturePreserved=$true; exactStateBackup=$true } | ConvertTo-Json | Set-Content desktop-dist/studio3-upgrade.json
+          @{ modelPreserved=$true; ok=$true; from='3.2.3'; to='3.3.0'; presetPreserved=$true; texturePreserved=$true; exactStateBackup=$true } | ConvertTo-Json | Set-Content desktop-dist/studio3-upgrade.json
           Copy-Item $report3 desktop-dist/
           Copy-Item "$report3.png" desktop-dist/ -ErrorAction SilentlyContinue
           $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLower()
@@ -157,11 +157,9 @@ jobs:
           cat > /tmp/vus-release-notes.md <<'NOTES'
           Windows 10/11 x64 installer for Video Unique Studio.
 
-          Version 3.2.3: manual AI candidate selection with explicit quality-warning acknowledgement. SSIM, MAE and strength warnings can be accepted; technical failures remain blocked. Candidate parameters and seed are persisted unchanged and used by export. No additional AI request is made. Last candidates can be reopened within the current session.
+          Version 3.3.0: creative video and audio tools. LUT import and strength, rotation, composition presets, vignette, fades, segment reverse, logo library, pitch, EQ, filters, reverb, echo, chorus/flanger, compressor/limiter, music/voice mix and ducking. Audio-only A/B previews, per-layer contribution, source-list and completed-job cleanup.
 
-          No live API generation was performed. See desktop/AI-MANUAL-SELECTION.md for scope, tests and limitations.
-
-          The installer was installed over 3.2.2 on a Windows runner. Verification includes manual selection through the UI, native export, previews, model selection, user preset/texture and exact state backup.
+          Real FFmpeg tests and installed UI checks cover creative export, audio playback, controls, logo manager, layer contribution, presets and cleanup. Upgrade from 3.2.3 preserves user presets, textures and selected AI model with an exact state backup. No live AI generation was performed. See desktop/CREATIVE-TOOLS.md for usage and limits.
 
           FFmpeg is distributed under GPLv3. The corresponding upstream FFmpeg snapshot is attached as FFmpeg-9.0.2-Source.zip; see FFmpeg-SOURCES.txt and the installed licenses for the build configuration and provider details.
 
@@ -170,6 +168,6 @@ jobs:
           if gh release view "$RELEASE_TAG" --repo hnsik/video-unique-studio >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --clobber
           else
-            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.2.3 — Manual AI Choice" --notes-file /tmp/vus-release-notes.md
+            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.3.0 — Creative Video and Audio" --notes-file /tmp/vus-release-notes.md
           fi
 

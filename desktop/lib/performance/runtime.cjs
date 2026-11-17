@@ -1,6 +1,6 @@
 'use strict';
 const os=require('node:os'),fs=require('node:fs/promises'),path=require('node:path'),{createHash}=require('node:crypto');
-const VERSION='3.2.3';
+const VERSION='3.3.0';
 function options(raw={}){const p={mode:'auto',threads:4,filterThreads:2,encoder:'cpu',smart:true,textureCacheMB:256,...raw};if(!['auto','eco','balanced','max','manual'].includes(p.mode)||!['cpu','gpu','auto'].includes(p.encoder))throw Error('Неверный режим производительности');for(const[k,min,max]of [['threads',1,64],['filterThreads',1,32],['textureCacheMB',32,2048]])if(!Number.isInteger(p[k])||p[k]<min||p[k]>max)throw Error('Недопустимое значение '+k);return p;}
 function threads(p,profile){p=options(p);const n=Math.max(1,os.availableParallelism()),cap=Math.min(n,12);if(p.mode==='manual')return{encode:Math.min(p.threads,n),filter:Math.min(p.filterThreads,n)};if(p.mode==='eco')return{encode:Math.min(2,n),filter:1};if(p.mode==='max')return{encode:cap,filter:Math.min(8,cap)};if(p.mode==='auto'&&p.smart&&profile?.threads)return profile.threads;return{encode:Math.min(4,cap),filter:Math.min(2,cap)};}
 function signature(tools,gpu=[]){return createHash('sha256').update(JSON.stringify({version:VERSION,cpu:os.cpus()[0]?.model,threads:os.availableParallelism(),ram:os.totalmem(),tools,gpu})).digest('hex');}
