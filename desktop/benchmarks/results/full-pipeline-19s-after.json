@@ -1,0 +1,100 @@
+[
+  {
+    "layers": 1,
+    "seconds": 74.865037136,
+    "path": "/workspace/scratch/e3b38511361e/full-perf/compare19-after/layers-1.mp4",
+    "performance": {
+      "seconds": 74.861,
+      "threads": {
+        "encode": 4,
+        "filter": 2
+      },
+      "encoder": "libx264",
+      "hardwareDecode": false,
+      "passes": 1,
+      "stages": [
+        {
+          "stage": "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430 \u0442\u0435\u043a\u0441\u0442\u0443\u0440\u044b",
+          "seconds": 0.186
+        },
+        {
+          "stage": "\u0424\u0438\u043b\u044c\u0442\u0440\u044b \u0438 \u043a\u043e\u0434\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435",
+          "seconds": 72.899,
+          "peakRAM": 219013120,
+          "cpuPercent": 22.949274189282765
+        },
+        {
+          "stage": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 FFprobe",
+          "seconds": 0.107,
+          "peakRAM": null,
+          "cpuPercent": null
+        },
+        {
+          "stage": "\u041a\u043e\u043d\u0442\u0440\u043e\u043b\u044c \u0434\u0435\u043a\u043e\u0434\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f",
+          "seconds": 1.658,
+          "peakRAM": null,
+          "cpuPercent": null
+        }
+      ],
+      "filterGraph": "[0:v]setpts=(PTS-STARTPTS)/1,scale=640:360:force_original_aspect_ratio=decrease,setsar=1,eq=brightness=0:contrast=1.04:saturation=1.08:gamma=1,hue=h=0,colorbalance=rs=0:gs=0:bs=0,unsharp=5:5:0.3:5:5:0,format=gbrp,geq=interpolation=nearest:r='clip(r(X,Y)+3*(sin(X*61+Y*83.57000000000001+12345+T*8)),0,255)':g='clip(g(X,Y)+3*(sin(X*61+Y*83.57000000000001+12345+T*8)),0,255)':b='clip(b(X,Y)+3*(sin(X*61+Y*83.57000000000001+12345+T*8)),0,255)' ,fps=30,trim=duration=19,setpts=PTS-STARTPTS,format=rgba[s0];color=c=black:s=640x360:r=30:d=19,format=rgba[s1];[s1][s0]overlay=x=(W-w)/2+W*0:y=(H-h)/2+H*0:shortest=1:format=auto[s2];[1:v]setpts=(PTS-STARTPTS)/1,fps=30,crop=iw*1:ih*1:iw*0:ih*0,scale=640:360,format=rgba,colorchannelmixer=aa=0.08,loop=loop=-1:size=1:start=0,setpts=N/30/TB,setpts=PTS+0/TB[s3];color=c=black@0:s=640x360:r=30:d=19,format=rgba[s4];[s4][s3]overlay=x=(W-w)/2+W*0:y=(H-h)/2+H*0:eof_action=pass:repeatlast=0:enable='between(t,0,19)',format=rgba[s5];[s5]split[s6][s7];[s7]alphaextract[s8];[s2]split[s10][s11];[s10]format=gbrp[s10rgb];[s6]format=gbrp[s6rgb];[s10rgb][s6rgb]blend=all_mode=softlight:shortest=1[s12];[s11]format=gbrp[s11rgb];[s11rgb][s12][s8]maskedmerge[s9];[s9]format=yuv420p[outv];[0:a]asetpts=PTS-STARTPTS,apad,atrim=duration=19,asetpts=PTS-STARTPTS[outa]",
+      "textureCacheMB": 256
+    }
+  },
+  {
+    "layers": 5,
+    "seconds": 84.36998057600002,
+    "path": "/workspace/scratch/e3b38511361e/full-perf/compare19-after/layers-5.mp4",
+    "performance": {
+      "seconds": 84.368,
+      "threads": {
+        "encode": 4,
+        "filter": 2
+      },
+      "encoder": "libx264",
+      "hardwareDecode": false,
+      "passes": 1,
+      "stages": [
+        {
+          "stage": "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430 \u0442\u0435\u043a\u0441\u0442\u0443\u0440\u044b",
+          "seconds": 0.001
+        },
+        {
+          "stage": "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430 \u0442\u0435\u043a\u0441\u0442\u0443\u0440\u044b",
+          "seconds": 0.132
+        },
+        {
+          "stage": "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430 \u0442\u0435\u043a\u0441\u0442\u0443\u0440\u044b",
+          "seconds": 0.176
+        },
+        {
+          "stage": "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430 \u0442\u0435\u043a\u0441\u0442\u0443\u0440\u044b",
+          "seconds": 0.129
+        },
+        {
+          "stage": "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430 \u0442\u0435\u043a\u0441\u0442\u0443\u0440\u044b",
+          "seconds": 0.186
+        },
+        {
+          "stage": "\u0424\u0438\u043b\u044c\u0442\u0440\u044b \u0438 \u043a\u043e\u0434\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435",
+          "seconds": 82.281,
+          "peakRAM": 275832832,
+          "cpuPercent": 22.106102322140813
+        },
+        {
+          "stage": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 FFprobe",
+          "seconds": 0.087,
+          "peakRAM": null,
+          "cpuPercent": null
+        },
+        {
+          "stage": "\u041a\u043e\u043d\u0442\u0440\u043e\u043b\u044c \u0434\u0435\u043a\u043e\u0434\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f",
+          "seconds": 1.371,
+          "peakRAM": null,
+          "cpuPercent": null
+        }
+      ],
+      "filterGraph": "[0:v]setpts=(PTS-STARTPTS)/1,scale=640:360:force_original_aspect_ratio=decrease,setsar=1,eq=brightness=0:contrast=1.04:saturation=1.08:gamma=1,hue=h=0,colorbalance=rs=0:gs=0:bs=0,unsharp=5:5:0.3:5:5:0,format=gbrp,geq=interpolation=nearest:r='clip(r(X,Y)+3*(sin(X*61+Y*83.57000000000001+12345+T*8)),0,255)':g='clip(g(X,Y)+3*(sin(X*61+Y*83.57000000000001+12345+T*8)),0,255)':b='clip(b(X,Y)+3*(sin(X*61+Y*83.57000000000001+12345+T*8)),0,255)' ,fps=30,trim=duration=19,setpts=PTS-STARTPTS,format=rgba[s0];color=c=black:s=640x360:r=30:d=19,format=rgba[s1];[s1][s0]overlay=x=(W-w)/2+W*0:y=(H-h)/2+H*0:shortest=1:format=auto[s2];[1:v]setpts=(PTS-STARTPTS)/1,fps=30,crop=iw*1:ih*1:iw*0:ih*0,scale=640:360,format=rgba,colorchannelmixer=aa=0.08,loop=loop=-1:size=1:start=0,setpts=N/30/TB,setpts=PTS+0/TB[s3];color=c=black@0:s=640x360:r=30:d=19,format=rgba[s4];[s4][s3]overlay=x=(W-w)/2+W*0:y=(H-h)/2+H*0:eof_action=pass:repeatlast=0:enable='between(t,0,19)',format=rgba[s5];[s5]split[s6][s7];[s7]alphaextract[s8];[s2]split[s10][s11];[s10]format=gbrp[s10rgb];[s6]format=gbrp[s6rgb];[s10rgb][s6rgb]blend=all_mode=softlight:shortest=1[s12];[s11]format=gbrp[s11rgb];[s11rgb][s12][s8]maskedmerge[s9];[2:v]setpts=(PTS-STARTPTS)/1,fps=30,crop=iw*1:ih*1:iw*0:ih*0,scale=640:360,format=rgba,colorchannelmixer=aa=0.08,loop=loop=-1:size=1:start=0,setpts=N/30/TB,setpts=PTS+0/TB[s13];color=c=black@0:s=640x360:r=30:d=19,format=rgba[s14];[s14][s13]overlay=x=(W-w)/2+W*0:y=(H-h)/2+H*0:eof_action=pass:repeatlast=0:enable='between(t,0,19)',format=rgba[s15];[s15]split[s16][s17];[s17]alphaextract[s18];[s9]split[s20][s21];[s20]format=gbrp[s20rgb];[s16]format=gbrp[s16rgb];[s20rgb][s16rgb]blend=all_mode=screen:shortest=1[s22];[s21]format=gbrp[s21rgb];[s21rgb][s22][s18]maskedmerge[s19];[3:v]setpts=(PTS-STARTPTS)/1,fps=30,crop=iw*1:ih*1:iw*0:ih*0,scale=640:360,format=rgba,colorchannelmixer=aa=0.08,loop=loop=-1:size=1:start=0,setpts=N/30/TB,setpts=PTS+0/TB[s23];color=c=black@0:s=640x360:r=30:d=19,format=rgba[s24];[s24][s23]overlay=x=(W-w)/2+W*0:y=(H-h)/2+H*0:eof_action=pass:repeatlast=0:enable='between(t,0,19)',format=rgba[s25];[s25]split[s26][s27];[s27]alphaextract[s28];[s19]split[s30][s31];[s30]format=gbrp[s30rgb];[s26]format=gbrp[s26rgb];[s30rgb][s26rgb]blend=all_mode=softlight:shortest=1[s32];[s31]format=gbrp[s31rgb];[s31rgb][s32][s28]maskedmerge[s29];[4:v]setpts=(PTS-STARTPTS)/1,fps=30,crop=iw*1:ih*1:iw*0:ih*0,scale=640:360,format=rgba,colorchannelmixer=aa=0.08,loop=loop=-1:size=1:start=0,setpts=N/30/TB,setpts=PTS+0/TB[s33];color=c=black@0:s=640x360:r=30:d=19,format=rgba[s34];[s34][s33]overlay=x=(W-w)/2+W*0:y=(H-h)/2+H*0:eof_action=pass:repeatlast=0:enable='between(t,0,19)',format=rgba[s35];[s35]split[s36][s37];[s37]alphaextract[s38];[s29]split[s40][s41];[s40]format=gbrp[s40rgb];[s36]format=gbrp[s36rgb];[s40rgb][s36rgb]blend=all_mode=screen:shortest=1[s42];[s41]format=gbrp[s41rgb];[s41rgb][s42][s38]maskedmerge[s39];[5:v]setpts=(PTS-STARTPTS)/1,fps=30,crop=iw*1:ih*1:iw*0:ih*0,scale=640:360,format=rgba,colorchannelmixer=aa=0.08,loop=loop=-1:size=1:start=0,setpts=N/30/TB,setpts=PTS+0/TB[s43];color=c=black@0:s=640x360:r=30:d=19,format=rgba[s44];[s44][s43]overlay=x=(W-w)/2+W*0:y=(H-h)/2+H*0:eof_action=pass:repeatlast=0:enable='between(t,0,19)',format=rgba[s45];[s45]split[s46][s47];[s47]alphaextract[s48];[s39]split[s50][s51];[s50]format=gbrp[s50rgb];[s46]format=gbrp[s46rgb];[s50rgb][s46rgb]blend=all_mode=softlight:shortest=1[s52];[s51]format=gbrp[s51rgb];[s51rgb][s52][s48]maskedmerge[s49];[s49]format=yuv420p[outv];[0:a]asetpts=PTS-STARTPTS,apad,atrim=duration=19,asetpts=PTS-STARTPTS[outa]",
+      "textureCacheMB": 256
+    }
+  }
+]

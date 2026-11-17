@@ -1,0 +1,10 @@
+{
+  "baseline": "3.0.2",
+  "duration": 19,
+  "width": 640,
+  "height": 360,
+  "originalStrongSeconds": 109.256355124,
+  "noPixelSeconds": 11.672,
+  "audioOnlySeconds": 1.018,
+  "notice": "Diagnostic ablation only: pixel=0 with identical strong settings. Effects are NOT disabled in the optimized app. Audio-only wall time is an independent run, not the audio share of the parallel pipeline."
+}

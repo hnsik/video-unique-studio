@@ -1,0 +1,493 @@
+[
+  {
+    "name": "simple",
+    "seconds": 5.17390325,
+    "spans": [
+      {
+        "method": "run",
+        "seconds": 3.7852297310000003,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.09068051500000002,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.090880897
+      },
+      {
+        "method": "run",
+        "seconds": 1.2747351420000004,
+        "kind": "qc"
+      }
+    ],
+    "outputFile": "simple.mp4"
+  },
+  {
+    "name": "strong",
+    "seconds": 63.99305849300001,
+    "spans": [
+      {
+        "method": "run",
+        "seconds": 62.437515921,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.09416247999999905,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.09426742799999192
+      },
+      {
+        "method": "run",
+        "seconds": 1.4427274830000096,
+        "kind": "qc"
+      }
+    ],
+    "outputFile": "strong.mp4"
+  },
+  {
+    "name": "one",
+    "seconds": 77.177026926,
+    "spans": [
+      {
+        "method": "materialize",
+        "seconds": 0.18909523700000136
+      },
+      {
+        "method": "run",
+        "seconds": 75.31529701799998,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.11631402200000593,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.11642615099999239
+      },
+      {
+        "method": "run",
+        "seconds": 1.5308083549999865,
+        "kind": "qc"
+      }
+    ],
+    "outputFile": "one.mp4"
+  },
+  {
+    "name": "five",
+    "seconds": 83.01495129,
+    "spans": [
+      {
+        "method": "materialize",
+        "seconds": 0.0007972799999988638
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.15211600499998895
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.15121405700000468
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.13607078399998135
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.20997415799999725
+      },
+      {
+        "method": "run",
+        "seconds": 80.767607419,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.12859943900001236,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.12876474700000837
+      },
+      {
+        "method": "run",
+        "seconds": 1.4594124770000052,
+        "kind": "qc"
+      }
+    ],
+    "outputFile": "five.mp4"
+  },
+  {
+    "name": "dynamic",
+    "seconds": 72.60320305500002,
+    "spans": [
+      {
+        "method": "materialize",
+        "seconds": 1.7673629409999994
+      },
+      {
+        "method": "run",
+        "seconds": 69.46307277099997,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.08937028800003463,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.08948739399999613
+      },
+      {
+        "method": "run",
+        "seconds": 1.2763238809999893,
+        "kind": "qc"
+      }
+    ],
+    "outputFile": "dynamic.mp4"
+  },
+  {
+    "name": "analysis",
+    "seconds": 76.20589340899996,
+    "spans": [
+      {
+        "method": "materialize",
+        "seconds": 0.0003302869999897666
+      },
+      {
+        "method": "run",
+        "seconds": 73.15665745400003,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.11107700999994995,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.11118950900004711
+      },
+      {
+        "method": "run",
+        "seconds": 1.5102053810000071,
+        "kind": "qc"
+      },
+      {
+        "method": "run",
+        "seconds": 0.08808865200000582,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.08819704400002956
+      },
+      {
+        "method": "run",
+        "seconds": 0.08147669099998893,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.08162475299998187
+      },
+      {
+        "method": "run",
+        "seconds": 0.09539987399999518,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.0955199750000029
+      },
+      {
+        "method": "run",
+        "seconds": 0.09637242600001628,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.09647106400004123
+      },
+      {
+        "method": "run",
+        "seconds": 0.1161792060000007,
+        "kind": "audio analysis"
+      },
+      {
+        "method": "run",
+        "seconds": 0.1248726359999855,
+        "kind": "audio analysis"
+      },
+      {
+        "method": "audioSimilarity",
+        "seconds": 0.43937714399996913
+      },
+      {
+        "method": "hash",
+        "seconds": 0.0071218879999942145
+      },
+      {
+        "method": "hash",
+        "seconds": 0.004617963000026066
+      },
+      {
+        "method": "run",
+        "seconds": 0.09064487399999052,
+        "kind": "other"
+      },
+      {
+        "method": "analyze",
+        "seconds": 1.4179063889999524
+      }
+    ],
+    "outputFile": "analysis.mp4"
+  },
+  {
+    "name": "batch10",
+    "seconds": 693.5156718,
+    "spans": [
+      {
+        "method": "materialize",
+        "seconds": 0.0029596589999855497
+      },
+      {
+        "method": "run",
+        "seconds": 68.78904736899997,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.0971077959999675,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.0972072160000098
+      },
+      {
+        "method": "run",
+        "seconds": 1.4154926489999635,
+        "kind": "qc"
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.0003290949999936856
+      },
+      {
+        "method": "run",
+        "seconds": 66.76865248500003,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.10670756100001745,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.10680137200001627
+      },
+      {
+        "method": "run",
+        "seconds": 1.246799498999957,
+        "kind": "qc"
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.0004336720000137575
+      },
+      {
+        "method": "run",
+        "seconds": 68.60785768900003,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.09031203699996695,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.09040665899997112
+      },
+      {
+        "method": "run",
+        "seconds": 1.5110599810000276,
+        "kind": "qc"
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.0004450389998964965
+      },
+      {
+        "method": "run",
+        "seconds": 66.81072661400005,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.11519074200000613,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.11528449300001375
+      },
+      {
+        "method": "run",
+        "seconds": 1.5028136270000831,
+        "kind": "qc"
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.00020979600003920496
+      },
+      {
+        "method": "run",
+        "seconds": 69.14712674099998,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.10386522999999578,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.10399731900007464
+      },
+      {
+        "method": "run",
+        "seconds": 1.6485543850000248,
+        "kind": "qc"
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.00045899000007193535
+      },
+      {
+        "method": "run",
+        "seconds": 67.16807085100002,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.08737120999989566,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.08750241700001062
+      },
+      {
+        "method": "run",
+        "seconds": 1.2862069530000444,
+        "kind": "qc"
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.00028258500003721564
+      },
+      {
+        "method": "run",
+        "seconds": 67.29373454800003,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.0926170830000192,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.09270735900010914
+      },
+      {
+        "method": "run",
+        "seconds": 1.3825360520000103,
+        "kind": "qc"
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.0005702180000953376
+      },
+      {
+        "method": "run",
+        "seconds": 69.02847145099996,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.09808633900003041,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.09817788700002711
+      },
+      {
+        "method": "run",
+        "seconds": 1.4324415850000223,
+        "kind": "qc"
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.000474534000037238
+      },
+      {
+        "method": "run",
+        "seconds": 67.23431795299996,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.09194296999997459,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.09204073600005358
+      },
+      {
+        "method": "run",
+        "seconds": 1.4703006830000085,
+        "kind": "qc"
+      },
+      {
+        "method": "materialize",
+        "seconds": 0.0005312189999967813
+      },
+      {
+        "method": "run",
+        "seconds": 67.2809850209999,
+        "kind": "filter+encode"
+      },
+      {
+        "method": "run",
+        "seconds": 0.09542826799978502,
+        "kind": "probe"
+      },
+      {
+        "method": "probe",
+        "seconds": 0.09552416199981235
+      },
+      {
+        "method": "run",
+        "seconds": 1.377382321999874,
+        "kind": "qc"
+      }
+    ]
+  }
+]

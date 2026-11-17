@@ -1,7 +1,8 @@
 name: Windows installer
 on:
   push:
-    branches: [desktop-windows]
+    branches: [desktop-windows, studio-3-desktop]
+    paths-ignore: ["**.md", "desktop/benchmarks/results/**"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -11,6 +12,7 @@ jobs:
     timeout-minutes: 40
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      VUS_BUNDLE_TOOLS: "1"
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -29,12 +31,38 @@ jobs:
       - run: npm test --prefix desktop
       - name: Build Windows x64 installer
         run: npm run dist:win --prefix desktop
-      - name: Install and verify packaged app, auto-download, reuse and real native export
+      - name: Package sources and offline texture library
+        run: node desktop/scripts/package-source.cjs
+      - name: Install and verify packaged app, bundled tools and real native export
         shell: pwsh
         run: |
           $installer = Get-ChildItem desktop-dist -Filter '*Setup*.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Installer not found' }
           $installRoot = Join-Path $env:RUNNER_TEMP 'VUSInstalled'
+          $oldInstaller = Join-Path $env:RUNNER_TEMP 'VUS-3.2.3-Setup.exe'
+          Invoke-WebRequest 'https://github.com/hnsik/video-unique-studio/releases/download/windows-v3-37/VideoUniqueStudio-3.0-Setup.exe' -OutFile $oldInstaller
+          $oldInstall = Start-Process -FilePath $oldInstaller -ArgumentList @('/S', "/D=$installRoot") -Wait -PassThru
+          if ($oldInstall.ExitCode -ne 0) { throw 'Old installation failed' }
+          $oldExe = Join-Path $installRoot 'Video Unique Studio.exe'
+          if (-not (Test-Path $oldExe)) { $oldExe = (Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -Filter 'Video Unique Studio.exe' -Recurse | Select-Object -First 1).FullName }
+          $oldReport = Join-Path $env:RUNNER_TEMP 'studio3-upgrade-before.json'
+          $oldTest = Start-Process -FilePath $oldExe -ArgumentList @('--self-test', $oldReport, '--v3-ui-test') -PassThru
+          if (-not $oldTest.WaitForExit(600000)) { $oldTest.Kill(); throw 'Old app timed out' }
+          if ($oldTest.ExitCode -ne 0 -or -not (Get-Content $oldReport -Raw | ConvertFrom-Json).ok) { throw 'Old app test failed' }
+          Copy-Item $oldReport desktop-dist/
+          $profile = Join-Path ([IO.Path]::GetTempPath()) 'vus-self-test-profile/studio3'
+          $stateFile = Join-Path $profile 'state.json'
+          $prior = Get-Content $stateFile -Raw | ConvertFrom-Json
+          $sentinel = Join-Path $profile 'textures/upgrade-sentinel.mp4'
+          New-Item (Split-Path $sentinel) -ItemType Directory -Force | Out-Null
+          Copy-Item (Join-Path $profile 'fixture.mp4') $sentinel
+          $prior.textures += @{ id='upgrade-sentinel'; path=$sentinel; name='User texture'; category='My textures'; width=160; height=120; codec='h264'; kind='custom'; dynamic=$true }
+          $prior.presets += @{ id='upgrade-sentinel'; name='User preset'; settings=$prior.settings }
+          if (-not $prior.aiOptions) { $prior | Add-Member aiOptions ([pscustomobject]@{}) }
+          $prior.aiOptions | Add-Member -Force models ([pscustomobject]@{gemini='gemini-preservation-fixture'})
+          $prior | ConvertTo-Json -Depth 100 | Set-Content $stateFile -Encoding utf8NoBOM
+          $priorHash = (Get-FileHash $stateFile -Algorithm SHA256).Hash
+          $textureHash = (Get-FileHash $sentinel -Algorithm SHA256).Hash
           $installed = Start-Process -FilePath $installer.FullName -ArgumentList @('/S', "/D=$installRoot") -Wait -PassThru
           if ($installed.ExitCode -ne 0) { throw "Installer exit $($installed.ExitCode)" }
           $appExe = Join-Path $installRoot 'Video Unique Studio.exe'
@@ -42,21 +70,39 @@ jobs:
             $fallback = Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -Filter 'Video Unique Studio.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($fallback) { $appExe = $fallback.FullName } else { throw 'Installed executable not found' }
           }
-          foreach ($mode in @('download','reuse')) {
+          foreach ($mode in @('bundled','reuse')) {
             $report = Join-Path $env:RUNNER_TEMP "desktop-smoke-$mode.json"
             $appArgs = @('--self-test', $report)
-            if ($mode -eq 'download') { $appArgs += '--force-tool-download' }
+            
             $process = Start-Process -FilePath $appExe -ArgumentList $appArgs -PassThru
             if (-not $process.WaitForExit(600000)) { $process.Kill(); throw 'Installed app test timed out' }
             if (-not (Test-Path $report)) { throw "No test report: $mode, exit $($process.ExitCode)" }
             Get-Content $report
             $result = Get-Content $report -Raw | ConvertFrom-Json
             if (-not $result.ok -or $process.ExitCode -ne 0) { throw "Installed app test failed: $mode" }
-            if ($mode -eq 'download' -and $result.tools.source -ne 'downloaded') { throw 'Auto-download was not verified' }
+            if ($result.tools.source -ne 'bundled') { throw 'Bundled offline FFmpeg was not used' }
             if ($mode -eq 'reuse' -and $result.tools.source -eq 'downloaded') { throw 'Existing tools were not reused' }
             Copy-Item $report desktop-dist/
             Start-Sleep -Seconds 1
           }
+          $report3 = Join-Path $env:RUNNER_TEMP 'studio3-smoke.json'
+          $p3 = Start-Process -FilePath $appExe -ArgumentList @('--self-test', $report3, '--v3-ui-test') -PassThru
+          if (-not $p3.WaitForExit(600000)) { $p3.Kill(); throw 'V3 test timeout' }
+          if (-not (Test-Path $report3)) { throw 'Missing V3 test report' }
+          Get-Content $report3
+          $r3 = Get-Content $report3 -Raw | ConvertFrom-Json
+          if (-not $r3.ok -or $p3.ExitCode -ne 0) { throw 'V3 installed app test failed' }
+          foreach ($reportExport in $r3.textureAnalyzer.exports) {
+            Copy-Item $reportExport.path desktop-dist/
+          }
+          $updated = Get-Content $stateFile -Raw | ConvertFrom-Json
+          if (-not ($updated.presets | Where-Object id -eq 'upgrade-sentinel') -or -not ($updated.textures | Where-Object id -eq 'upgrade-sentinel')) { throw 'Upgrade lost user records' }
+          if ((Get-FileHash $sentinel -Algorithm SHA256).Hash -ne $textureHash) { throw 'Upgrade changed user texture' }
+          if ((Get-FileHash (Join-Path $profile 'backups/3.3.0-state.json') -Algorithm SHA256).Hash -ne $priorHash) { throw 'Upgrade backup mismatch' }
+          if ($updated.aiOptions.models.gemini -ne 'gemini-preservation-fixture') { throw 'Upgrade lost selected AI model' }
+          @{ modelPreserved=$true; ok=$true; from='3.2.3'; to='3.3.0'; presetPreserved=$true; texturePreserved=$true; exactStateBackup=$true } | ConvertTo-Json | Set-Content desktop-dist/studio3-upgrade.json
+          Copy-Item $report3 desktop-dist/
+          Copy-Item "$report3.png" desktop-dist/ -ErrorAction SilentlyContinue
           $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLower()
           "$hash  $($installer.Name)" | Set-Content "$($installer.FullName).sha256" -Encoding ascii
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -64,10 +110,25 @@ jobs:
           name: Video-Unique-Studio-Windows-x64
           path: |
             desktop-dist/*Setup*.exe
+            desktop-dist/*Source.zip
+            desktop-dist/*Textures.zip
             desktop-dist/*.sha256
+            desktop-dist/FFmpeg-SOURCES.txt
             desktop-dist/desktop-smoke-*.json
+            desktop-dist/studio3-smoke*
+            desktop-dist/studio3-upgrade.json
+            desktop-dist/texture-report.*
           if-no-files-found: error
           retention-days: 30
+      - name: Save UI verification separately
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: Studio3-UI-verification
+          path: |
+            desktop-dist/studio3-smoke*
+            desktop-dist/studio3-upgrade.json
+            desktop-dist/texture-report.*
+          if-no-files-found: error
       - name: Upload diagnostics after failure
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -75,6 +136,7 @@ jobs:
           name: Windows-build-diagnostics
           path: |
             ${{ runner.temp }}/desktop-smoke-*.json
+            ${{ runner.temp }}/studio3-smoke*
             desktop-dist/builder-debug.yml
           if-no-files-found: ignore
   release:
@@ -90,19 +152,22 @@ jobs:
       - name: Publish verified installer
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: windows-v2.2.0-${{ github.run_number }}
+          RELEASE_TAG: windows-v3-${{ github.run_number }}
         run: |
           cat > /tmp/vus-release-notes.md <<'NOTES'
           Windows 10/11 x64 installer for Video Unique Studio.
 
-          Includes the application runtime. On first launch it finds compatible FFmpeg/FFprobe or downloads the pinned Gyan build and verifies SHA-256. No separate Node.js/Python installation is required.
+          Version 3.3.0: creative video and audio tools. LUT import and strength, rotation, composition presets, vignette, fades, segment reverse, logo library, pitch, EQ, filters, reverb, echo, chorus/flanger, compressor/limiter, music/voice mix and ducking. Audio-only A/B previews, per-layer contribution, source-list and completed-job cleanup.
 
-          The installer was installed on a Windows runner and tested twice: automatic component download and reuse, native video/audio export, metadata cleanup, frame metrics, Chromium playback and reference deletion.
+          Real FFmpeg tests and installed UI checks cover creative export, audio playback, controls, logo manager, layer contribution, presets and cleanup. Upgrade from 3.2.3 preserves user presets, textures and selected AI model with an exact state backup. No live AI generation was performed. See desktop/CREATIVE-TOOLS.md for usage and limits.
+
+          FFmpeg is distributed under GPLv3. The corresponding upstream FFmpeg snapshot is attached as FFmpeg-9.0.2-Source.zip; see FFmpeg-SOURCES.txt and the installed licenses for the build configuration and provider details.
 
           This build is not code-signed. Windows may display a publisher/reputation warning.
           NOTES
           if gh release view "$RELEASE_TAG" --repo hnsik/video-unique-studio >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --clobber
           else
-            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 2.2.0 — Windows x64" --notes-file /tmp/vus-release-notes.md --latest
+            gh release create "$RELEASE_TAG" installer/* --repo hnsik/video-unique-studio --target "$GITHUB_SHA" --title "Video Unique Studio 3.3.0 — Creative Video and Audio" --notes-file /tmp/vus-release-notes.md
           fi
+

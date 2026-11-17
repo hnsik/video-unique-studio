@@ -1,0 +1,36 @@
+[
+  {
+    "targetMB": 10,
+    "actualBytes": 11059609,
+    "frames": 4,
+    "decoded": true,
+    "seconds": 0.678
+  },
+  {
+    "targetMB": 100,
+    "actualBytes": 105064028,
+    "frames": 38,
+    "decoded": true,
+    "seconds": 1.081
+  },
+  {
+    "targetMB": 500,
+    "actualBytes": 525319082,
+    "frames": 190,
+    "decoded": true,
+    "seconds": 2.685
+  },
+  {
+    "targetMB": 1024,
+    "actualBytes": 1075521421,
+    "frames": 389,
+    "decoded": true,
+    "seconds": 2.957
+  },
+  {
+    "batch": 50,
+    "done": 50,
+    "errors": [],
+    "seconds": 15.799
+  }
+]

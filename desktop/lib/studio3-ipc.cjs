@@ -1,0 +1,100 @@
+'use strict';
+const {Studio,DEFAULT,LAYER,validate,fpsOf}=require('./studio3.cjs'),{catalog,kinds,pixels,png}=require('./textures.cjs');
+const creative=require('./creative.cjs'),creativeService=require('./creative-service.cjs');
+const cache=require('./cache.cjs'),timeline=require('./timeline.cjs');
+const path=require('node:path'),fs=require('node:fs/promises'),{randomUUID}=require('node:crypto');
+function register({handle,dialog,shell,getWindow,getTools,root,resultsRoot,selfTest=false,finishTest}){
+ let studioPromise;const folders=new Set([resultsRoot]);
+ const studio=async()=>{if(!studioPromise)studioPromise=(async()=>{const s=new Studio({tools:getTools(),root,onEvent:value=>getWindow()?.webContents.send('studio3:update',value)});await s.init();s.textureAnalyzer=await new (require('./texture-analyzer.cjs').TextureAnalyzer)(s).init();s.performanceService=await new (require('./performance/service.cjs').PerformanceService)(s).init();s.previewService=await new (require('./performance/preview.cjs').Preview)(s).init();const vault=await new (require('./ai/vault.cjs').Vault)(root,require('electron').safeStorage).init();s.ai=await new (require('./ai/engine.cjs').AIEngine)(s,vault).init();for(const r of Object.values(s.state.aiResults||{}))if(r.preview)s.outputs.set(r.preview.id,r.preview.path);for(const j of s.queue)folders.add(j.folder);if(s.state.outputFolder)folders.add(s.state.outputFolder);return s;})();return studioPromise;};
+ handle('studio3:call',async(_e,action,data={})=>{const s=await studio();
+ const execute=async()=>{switch(action){
+ case 'init':return{...s.snapshot(),defaults:DEFAULT,layerDefaults:LAYER,kinds,folder:s.state.outputFolder||resultsRoot,textureTests:s.textureAnalyzer.snapshot(),vmaf:s.textureAnalyzer.vmaf,selfTest};
+ case 'creativeImport':{const type=data.kind,ext=type==='lut'?['cube']:type==='logo'?['png','jpg','jpeg','webp','bmp','tif','tiff']:type==='audio'?['wav','mp3','aac','m4a','flac','ogg','opus']:null;if(!ext)throw Error('Неверный импорт');const c=await dialog.showOpenDialog(getWindow(),{title:'Импорт '+type,properties:type==='lut'?['openFile']:['openFile','multiSelections'],filters:[{name:type,extensions:ext}]});if(c.canceled)return s.snapshot();return type==='lut'?creative.importLut(s,c.filePaths[0]):type==='logo'?creativeService.importLogos(s,c.filePaths):creative.importAudio(s,c.filePaths);}
+ case 'creativeResource':return creativeService.resource(s,data);
+ case 'audioPreview':return creativeService.audioPreview(s,data);
+ case 'layerContribution':return creativeService.contribution(s,data);
+ case 'clearSources':return creativeService.clear(s,'sources');
+ case 'clearCompleted':return creativeService.clear(s,'completed');
+ case 'performanceConfig':return s.performanceService.config();
+ case 'performanceSave':return s.performanceService.save(data);
+ case 'performanceStart':return s.performanceService.start(data);
+ case 'performanceStatus':return s.performanceService.job;
+ case 'performanceCancel':s.performanceService.cancel();return true;
+ case 'performanceReport':return s.performanceService.get(data.id);
+ case 'performanceExport':{const r=s.performanceService.get(data.id),c=await dialog.showSaveDialog(getWindow(),{defaultPath:'VideoUniqueStudio-performance.json',filters:[{name:'JSON',extensions:['json']}]});if(!c.canceled)await fs.writeFile(c.filePath,JSON.stringify(r,null,2));return true;}
+ case 'framePreview':return s.previewService.request(data,true);
+ case 'previewCancel':s.previewService.cancel();return true;
+ case 'retryCPU':{await s.performanceService.save({...s.performanceService.config().options,encoder:'cpu'});const j=s.queue.find(j=>j.id===data.id);if(j&&j.status==='error'){j.status='queued';delete j.error;s.drain();}return s.snapshot();}
+ case 'aiConfig':return s.ai.config();
+ case 'aiDiagnosticsStatus':return s.ai.diagnostics.snapshot();
+ case 'aiDiagnosticsCancel':s.ai.diagnostics.cancel();return true;
+ case 'aiDiagnosticsStart':{
+  let consent=false;
+  if(data.generation){const providers=data.providers||Object.keys(require('./ai/providers.cjs').PROVIDERS);if(!Array.isArray(providers)||providers.length>6||providers.some(p=>!require('./ai/providers.cjs').PROVIDERS[p]))throw Error('Неверные провайдеры');const answer=await dialog.showMessageBox(getWindow(),{type:'question',buttons:['Отмена','Выполнить тест'],defaultId:0,cancelId:0,title:'Тест реальной генерации',message:'Отправить по одному запросу: '+providers.join(', ')+'?',detail:'До 2000 выходных токенов на запрос. Возможны списания по тарифу API; подписки на чат не заменяют API-баланс. Разрешения биллинга в настройках продолжают действовать. Используются только синтетические данные; после ответа проверяется короткий локальный экспорт.'});if(answer.response!==1)return null;consent=true;}
+  return s.ai.diagnostics.start({...data,consent});
+ }
+ case 'aiDiagnosticsExport':{const report=s.ai.diagnostics.snapshot();if(!report)throw Error('Сначала выполните диагностику');const d=await dialog.showSaveDialog(getWindow(),{defaultPath:'VideoUniqueStudio-AI-diagnostics.json',filters:[{name:'JSON',extensions:['json']}]});if(!d.canceled)await fs.writeFile(d.filePath,JSON.stringify(report,null,2));return !d.canceled;}
+
+ case 'aiPreview':{const r=s.state.aiResults?.[data.id];if(!r)throw Error('Нет результата ИИ');if(r.preview?.path&&path.resolve(r.preview.path).startsWith(path.resolve(root,'preview')+path.sep)){try{await fs.access(r.preview.path);s.outputs.set(r.preview.id,r.preview.path);return r.preview;}catch{}}return s.previewService.request({id:data.id,settings:r.settings},false);}
+ case 'aiModels':return s.ai.manager.models(data.provider,{force:!!data.force,workspace:s.ai.options().workspace});
+ case 'aiOptions':return s.ai.saveOptions(data);
+ case 'aiKey':return s.ai.vault.set(data.provider,data.key);
+ case 'aiConnection':return s.ai.connection();
+ case 'aiStart':return s.ai.start(data);
+ case 'aiApplyCandidate':return s.ai.applyCandidate(data);
+ case 'aiStatus':return s.ai.snapshot();
+ case 'aiCancel':s.ai.cancel(data.id);return true;
+ case 'aiClear':delete s.state.aiResults?.[data.id];await s.save();return true;
+ case 'textureTestStart':return s.textureAnalyzer.start(data);
+ case 'textureTestStatus':return s.textureAnalyzer.snapshot();
+ case 'textureTestCancel':s.textureAnalyzer.cancel(data.id);return true;
+ case 'textureTestRetry':return s.textureAnalyzer.retry(data.id);
+ case 'textureTestHistory':return s.textureAnalyzer.list(String(data.search||'').slice(0,200));
+ case 'textureTestGet':{const r=s.textureAnalyzer.get(data.id);for(const p of Object.values(r.comparisons))for(const sample of p.samples)for(const kind of Object.keys(sample.images)){const id=randomUUID();s.outputs.set(id,sample.images[kind]);sample.images[kind]='vus://studio/media/'+id;}return r;}
+ case 'textureTestSave':return s.textureAnalyzer.save(data.id);
+ case 'textureTestDelete':await s.textureAnalyzer.remove(data.id);return true;
+ case 'textureTestSuggest':return s.textureAnalyzer.suggest(data.ids,data.constraints,data.mode);
+ case 'textureTestRepeat':{const r=s.textureAnalyzer.get(data.id);let source=s.assets.get(r.source.id);if(!source){[source]=await s.importVideo([r.source.path]);}return s.textureAnalyzer.start({sourceId:source.id,config:r.config,candidates:[{name:r.name,layers:r.layers}],force:true});}
+ case 'textureTestExport':{if(!['json','csv','html','pdf'].includes(data.format)||!Array.isArray(data.ids)||!data.ids.length||data.ids.length>110)throw Error('Неверный запрос отчёта');const records=data.ids.map(id=>s.textureAnalyzer.get(id)),reporter=require('./texture-reports.cjs');let file;if(selfTest&&data.testFile)file=path.join(root,'texture-report.'+data.format);else{const choice=await dialog.showSaveDialog(getWindow(),{defaultPath:'Texture-analysis.'+data.format,filters:[{name:data.format.toUpperCase(),extensions:[data.format]}]});if(choice.canceled)return null;file=choice.filePath;}if(data.format==='json')await fs.writeFile(file,JSON.stringify(records,null,2));else if(data.format==='csv')await fs.writeFile(file,reporter.csv(records));else{const html=await reporter.html(records);if(data.format==='html')await fs.writeFile(file,html);else{const {BrowserWindow}=require('electron'),w=new BrowserWindow({show:false,webPreferences:{sandbox:true,nodeIntegration:false,contextIsolation:true,javascript:false}});try{await w.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent(html));const pdf=await w.webContents.printToPDF({printBackground:true,preferCSSPageSize:true});await fs.writeFile(file,pdf);}finally{w.destroy();}}}return{path:file,bytes:(await fs.stat(file)).size,...(selfTest&&data.format==='pdf'?{signature:(await fs.readFile(file)).subarray(0,5).toString()}: {})};}
+ case 'testFixture':{if(!selfTest)throw Error('Тестовый режим отключён');const file=path.join(root,'fixture.mp4');await s.run(s.tools.ffmpeg,['-v','error','-y','-f','lavfi','-i','testsrc2=s=160x120:r=12:d=1','-f','lavfi','-i','sine=frequency=440:duration=1','-c:v','libx264','-pix_fmt','yuv420p','-c:a','aac','-shortest',file]);return s.importVideo([file]);}
+ case 'testCreativeResources':{if(!selfTest)throw Error('Тестовый режим отключён');const logo=path.join(root,'creative-logo.png'),audio=path.join(root,'creative-music.wav');await s.run(s.tools.ffmpeg,['-v','error','-y','-f','lavfi','-i','color=red@0.5:s=32x16,format=rgba','-frames:v','1',logo]);await creativeService.importLogos(s,[logo]);await s.run(s.tools.ffmpeg,['-v','error','-y','-f','lavfi','-i','sine=frequency=800:duration=1',audio]);await creative.importAudio(s,[audio]);return s.snapshot();}
+ case 'testCheckpoint':{if(!selfTest)throw Error('Тестовый режим отключён');await fs.writeFile(path.join(root,'selftest-stage.txt'),String(data.stage).slice(0,100));return true;}
+ case 'testFinish':{if(!selfTest)throw Error('Тестовый режим отключён');return finishTest(data);}
+ case 'import':{const choice=await dialog.showOpenDialog(getWindow(),{title:data.texture?'Импорт текстур':'Импорт видео',properties:['openFile','multiSelections'],filters:[{name:'Медиа',extensions:data.texture?['png','jpg','jpeg','webp','bmp','tif','tiff','mp4','mov','webm']:['mp4','mov','mkv','webm','avi','m4v']}]});if(choice.canceled)return[];return data.texture?s.importTextures(choice.filePaths,String(data.category||'Мои текстуры')):s.importVideo(choice.filePaths);}
+ case 'drop':{if(!Array.isArray(data.paths)||data.paths.length>50||data.paths.some(p=>typeof p!=='string'||!path.isAbsolute(p)))throw Error('Недопустимый список файлов');return data.texture?s.importTextures(data.paths):s.importVideo(data.paths);}
+ case 'proxy':{const a=s.assets.get(data.id);if(!a||a.kind!=='video')throw Error('Выберите видео');const dir=path.join(root,'proxy');await fs.mkdir(dir,{recursive:true});const stat=await fs.stat(a.path),file=path.join(dir,a.id+'-'+stat.size+'-'+Math.round(stat.mtimeMs)+'.mp4');try{await fs.access(file);}catch{try{await s.run(s.tools.ffmpeg,['-v','error','-y','-protocol_whitelist','file,pipe','-i',a.path,'-vf','scale=640:640:force_original_aspect_ratio=decrease:force_divisible_by=2','-c:v','libx264','-preset','ultrafast','-crf','27','-c:a','aac','-movflags','+faststart',file]);await s.probe(file);}catch(e){await fs.rm(file,{force:true});throw e;}}const id=randomUUID();s.outputs.set(id,file);await cache.prune(root,(s.state.cacheMB||1024)*1048576,[file]);return{id};}
+ case 'cacheInfo':{const files=await cache.entries(root);return{bytes:files.reduce((n,f)=>n+f.size,0),files:files.length,budgetMB:s.state.cacheMB||1024};}
+ case 'cacheClear':return cache.prune(root,0);
+ case 'cacheBudget':{if(!Number.isInteger(data.mb)||data.mb<128||data.mb>16384)throw Error('Лимит кэша: 128–16384 МБ');s.state.cacheMB=data.mb;await s.save();return cache.prune(root,data.mb*1048576);}
+ case 'generatorPreview':{const dir=path.join(root,'generator-preview');await fs.mkdir(dir,{recursive:true});const id=randomUUID(),dynamic=!!data.dynamic||data.kind==='Animated Noise',file=path.join(dir,id+(dynamic?'.webm':'.png')),recipe={...data,width:270,height:480};if(dynamic){const mov=path.join(dir,id+'.mov');try{await s.renderTexture(recipe,mov,true);await s.run(s.tools.ffmpeg,['-v','error','-y','-i',mov,'-an','-c:v','libvpx-vp9','-cpu-used','5','-b:v','0','-crf','30','-pix_fmt','yuva420p',file]);}finally{await fs.rm(mov,{force:true});}}else await s.renderTexture(recipe,file);s.outputs.set(id,file);await cache.prune(root,(s.state.cacheMB||1024)*1048576,[file]);return{id,dynamic,rendered:true};}
+ case 'folder':{const choice=await dialog.showOpenDialog(getWindow(),{properties:['openDirectory','createDirectory']});if(choice.canceled)return null;folders.add(choice.filePaths[0]);s.state.outputFolder=choice.filePaths[0];await s.save();return choice.filePaths[0];}
+ case 'removeSource':return creativeService.clear(s,'sources',[data.id]);
+ case 'generate':{if(s.generating)throw Error('Дождитесь окончания генерации');s.generating=true;try{return await s.generate(data);}finally{s.generating=false;}}
+ case 'texturePreview':{const t=s.texture(data.id);return{url:'vus://studio/media/'+t.id};}
+ case 'export':if(s.ai.jobs.some(j=>['queued','running'].includes(j.status)))throw Error('Дождитесь завершения обработки ИИ или отмените её');if(!folders.has(data.folder))throw Error('Выберите папку экспорта');if(data.perSource){if(data.ids.some(id=>!data.perSource[id]))throw Error('Не для всех видео выбраны настройки');for(const id of data.ids)validate(data.perSource[id]);if(s.queue.filter(j=>['queued','running'].includes(j.status)).length+data.ids.length>50)throw Error('Максимум 50 заданий');for(const id of data.ids)await s.enqueue([id],data.perSource[id],data.folder);return s.snapshot();}return s.enqueue(data.ids,data.settings,data.folder);
+ case 'preview':return s.previewService.request(data);
+ case 'pause':s.paused=!s.paused;s.emit();if(!s.paused)s.drain();return s.snapshot();
+ case 'cancel':s.cancel();return true;
+ case 'retry':{const j=s.queue.find(x=>x.id===data.id);if(j&&['error','cancelled'].includes(j.status)){j.status='queued';delete j.error;s.drain();}return s.snapshot();}
+ case 'removeJob':s.queue=s.queue.filter(x=>x.id!==data.id||x.status==='running');await s.save();s.emit();return s.snapshot();
+ case 'moveJob':{const i=s.queue.findIndex(x=>x.id===data.id),j=i+data.delta;if(i>=0&&j>=0&&j<s.queue.length&&s.queue[i].status==='queued'&&s.queue[j].status==='queued')[s.queue[i],s.queue[j]]=[s.queue[j],s.queue[i]];await s.save();s.emit();return s.snapshot();}
+ case 'settings':s.state.settings=validate(data.settings);s.state.theme=data.theme==='light'?'light':'dark';await s.save();return true;
+ case 'presetSave':{const p={id:data.id||randomUUID(),name:String(data.name||'Пресет').slice(0,120),settings:validate(data.settings)};const i=s.state.presets.findIndex(x=>x.id===p.id);if(i<0)s.state.presets.push(p);else s.state.presets[i]=p;await s.save();return s.snapshot();}
+ case 'presetCheck':{const missing=[];for(const l of validate(data.settings).layers){try{const t=s.texture(l.textureId);if(t.path)await fs.access(t.path);}catch{missing.push(l.name);}}const c=creative.validate(data.settings.creative);for(const [key,list]of [['lut',s.state.luts],['musicId',s.state.audioLibrary],['voiceId',s.state.audioLibrary]])if(c[key]){try{const a=list.find(x=>x.id===c[key]);if(!a)throw Error();await fs.access(a.path);}catch{missing.push(key+': '+c[key]);}}return missing;}
+ case 'recipeExport':{const t=s.texture(data.id);if(!t.procedural&&!catalog.some(x=>x.id===t.id))throw Error('Текстура не является процедурной');const c=await dialog.showSaveDialog(getWindow(),{defaultPath:(t.name||'texture')+'.json',filters:[{name:'Рецепт текстуры JSON',extensions:['json']}]});if(!c.canceled){const {path:file,...recipe}=t;await fs.writeFile(c.filePath,JSON.stringify(recipe,null,2));}return true;}
+ case 'presetDelete':s.state.presets=s.state.presets.filter(x=>x.id!==data.id);if(s.state.defaultPreset===data.id)s.state.defaultPreset=null;await s.save();return s.snapshot();
+ case 'presetDefault':s.state.defaultPreset=data.id;await s.save();return s.snapshot();
+ case 'presetExport':{const p=s.state.presets.find(x=>x.id===data.id);if(!p)throw Error('Пресет не найден');const c=await dialog.showSaveDialog(getWindow(),{defaultPath:p.name+'.json',filters:[{name:'JSON',extensions:['json']}]});if(!c.canceled)await fs.writeFile(c.filePath,JSON.stringify(p,null,2));return true;}
+ case 'presetImport':{const c=await dialog.showOpenDialog(getWindow(),{properties:['openFile'],filters:[{name:'JSON',extensions:['json']}]});if(c.canceled)return s.snapshot();if((await fs.stat(c.filePaths[0])).size>1000000)throw Error('Пресет слишком большой');const p=JSON.parse(await fs.readFile(c.filePaths[0],'utf8'));s.state.presets.push({id:randomUUID(),name:String(p.name||'Импорт').slice(0,120),settings:validate(p.settings)});await s.save();return s.snapshot();}
+ case 'favorite':s.state.favorites=s.state.favorites.includes(data.id)?s.state.favorites.filter(x=>x!==data.id):[...s.state.favorites,data.id];await s.save();return s.snapshot();
+ case 'textureEdit':{const t=s.state.textures.find(x=>x.id===data.id);if(!t)throw Error('Можно изменять только собственные текстуры');if(data.remove){s.state.textures=s.state.textures.filter(x=>x.id!==data.id);s.assets.delete(data.id);}else{if(data.name)t.name=String(data.name).slice(0,120);if(data.category)t.category=String(data.category).slice(0,120);}await s.save();return s.snapshot();}
+ case 'textureExport':{const t=s.texture(data.id);const c=await dialog.showSaveDialog(getWindow(),{defaultPath:(t.name||'texture')+'.png',filters:[{name:'PNG',extensions:['png']}]});if(!c.canceled){if(t.path&&!t.procedural)await s.run(s.tools.ffmpeg,['-v','error','-y','-i',t.path,'-frames:v','1',c.filePath]);else await s.renderTexture({...t,width:t.width||1080,height:t.height||1920},c.filePath);}return true;}
+ case 'animationExport':{const t=s.texture(data.id);if(!t.procedural&&!catalog.some(x=>x.id===t.id))throw Error('Выберите процедурную текстуру');const c=await dialog.showSaveDialog(getWindow(),{defaultPath:(t.name||'texture')+'.mov',filters:[{name:'MOV с альфа-каналом',extensions:['mov']}]});if(!c.canceled)await s.renderTexture({...t,width:t.width||1080,height:t.height||1920},c.filePath,true);return true;}
+ case 'analyze':{const c=await dialog.showOpenDialog(getWindow(),{title:'Выберите обработанное видео',properties:['openFile']});if(c.canceled)return null;const source=s.assets.get(data.id);if(!source)throw Error('Выберите исходник');const cfg=validate(data.settings||DEFAULT),map=timeline.segments(+source.probe.format.duration,cfg.fps||fpsOf(source.probe),creative.edits(cfg,cfg.fps||fpsOf(source.probe))),d=map.reduce((n,e)=>n+e.end-e.start,0),rate=cfg.durationMethod==='slow'?d/(d/cfg.speed+cfg.extra+cfg.frameDelta/(cfg.fps||fpsOf(source.probe))):cfg.speed;return (cfg.analysisMode==='full'?s.analyzeFull.bind(s):s.analyze.bind(s))(source.path,c.filePaths[0],{rate,timeline:map,count:cfg.analysisSamples,size:cfg.analysisSize});}
+ case 'licenses':return shell.openPath(path.join(path.dirname(s.tools.ffmpeg),'SOURCE-AND-LICENSE.txt'));
+ case 'openResults':return shell.openPath([...folders].includes(data.folder)?data.folder:resultsRoot);
+ default:throw Error('Неизвестное действие');
+ }};const heavy=['audioPreview','layerContribution','creativeImport','proxy','analyze','textureExport','animationExport','cacheClear','cacheBudget','generatorPreview','generate','textureTestExport'];return heavy.includes(action)?s.exclusive(action,execute):execute();});
+ return{async media(id){const s=await studio();const a=s.assets.get(id),builtin=catalog.find(t=>t.id===id);return a?.path||s.outputs.get(id)||(builtin&&path.join(__dirname,'../assets/textures',builtin.category,id+'.png'));},async close(){if(studioPromise){const s=await studioPromise;s.closing=true;s.performanceService?.cancel();s.ai?.diagnostics.cancel();await s.previewService?.close();for(const j of s.ai?.jobs||[])s.ai.cancel(j.id);s.cancel();await s.ai?.diagnostics.promise;await s.taskChain;await s.save();s.textureAnalyzer?.close();s.performanceService?.close();}}};
+}
+module.exports={register};

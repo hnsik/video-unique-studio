@@ -1,6 +1,6 @@
 {
   "name": "video-unique-studio-desktop",
-  "version": "2.2.0",
+  "version": "3.3.0",
   "description": "Video Unique Studio for Windows with native FFmpeg",
   "author": "Video Unique Studio",
   "license": "MIT",
@@ -34,7 +34,8 @@
       "ffmpeg-manifest.json",
       "renderer/**",
       "assets/**",
-      "package.json"
+      "package.json",
+      "v3/**"
     ],
     "win": {
       "target": [
@@ -46,7 +47,7 @@
         }
       ],
       "icon": "assets/icon.ico",
-      "artifactName": "Video-Unique-Studio-Setup-${version}-x64.exe"
+      "artifactName": "VideoUniqueStudio-3.0-Setup.exe"
     },
     "nsis": {
       "oneClick": true,
@@ -56,6 +57,15 @@
       "createStartMenuShortcut": true,
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false
-    }
+    },
+    "extraResources": [
+      {
+        "from": "bundled-tools",
+        "to": "ffmpeg",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   }
 }

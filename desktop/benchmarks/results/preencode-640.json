@@ -1,0 +1,38 @@
+[
+  {
+    "scenario": "one",
+    "width": 640,
+    "height": 360,
+    "frames": [
+      4,
+      15,
+      27
+    ],
+    "equal": true,
+    "bytes": 2073600
+  },
+  {
+    "scenario": "five",
+    "width": 640,
+    "height": 360,
+    "frames": [
+      4,
+      15,
+      27
+    ],
+    "equal": true,
+    "bytes": 2073600
+  },
+  {
+    "scenario": "dynamic",
+    "width": 640,
+    "height": 360,
+    "frames": [
+      4,
+      15,
+      27
+    ],
+    "equal": true,
+    "bytes": 2073600
+  }
+]

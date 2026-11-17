@@ -24,6 +24,7 @@ const {
 const { NativeEngine } = require("./lib/native-engine.cjs");
 const run = promisify(execFile),
   selfTest = process.argv.includes("--self-test");
+const v3Test=process.argv.includes("--v3-ui-test");
 const reportIndex = process.argv.indexOf("--self-test");
 const reportPath = selfTest ? process.argv[reportIndex + 1] : null;
 if (selfTest && !reportPath) throw Error("Missing self-test report path");
@@ -41,6 +42,7 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ]);
+let studio3;
 let window,
   engine,
   tools,
@@ -120,7 +122,7 @@ async function prepare(forceDownload = false) {
         forceDownload,
       });
       attachTools(pair);
-      await window.loadURL("vus://studio/");
+      await window.loadURL(selfTest && !v3Test ? "vus://studio/" : "vus://studio/v3/index.html");
     } catch (error) {
       broadcast({
         phase: "error",
@@ -136,6 +138,7 @@ async function prepare(forceDownload = false) {
   return setupPromise;
 }
 async function finishTest(result) {
+  if(v3Test){try{result.lastStage=await fs.readFile(path.join(app.getPath('userData'),'studio3','selftest-stage.txt'),'utf8');}catch{}}
   if (!selfTest) throw Error("Self-test disabled");
   clearTimeout(selfTestTimer);
   await fs.mkdir(path.dirname(path.resolve(reportPath)), { recursive: true });
@@ -152,6 +155,7 @@ async function finishTest(result) {
       2,
     ),
   );
+  if(v3Test&&window) { window.showInactive(); window.webContents.invalidate(); await new Promise(r=>setTimeout(r,300)); const screenshot=await window.webContents.capturePage(); await fs.writeFile(reportPath+".png",screenshot.toPNG()); }
   await engine?.closeAll();
   app.exit(result.ok ? 0 : 1);
 }
@@ -173,9 +177,16 @@ function safeAsset(url) {
 async function start() {
   protocol.handle("vus", async (request) => {
     try {
-      const response = await net.fetch(
-        pathToFileURL(safeAsset(request.url)).href,
-      );
+      const url = new URL(request.url);
+      let file;
+      if(url.pathname.startsWith('/media/')) file=await studio3.media(url.pathname.slice(7));
+      else if(url.pathname.startsWith('/v3/')) {
+        const name=url.pathname.slice(4);
+        if(!['index.html','app.js','creative.js','texture-analyzer.js','ai.js','performance.js','style.css'].includes(name))throw Error('Invalid asset');
+        file=path.join(__dirname,'v3',name);
+      } else file=safeAsset(request.url);
+      if(!file)throw Error('Missing media');
+      const response=await net.fetch(pathToFileURL(file).href,{headers:request.headers});
       const headers = new Headers(response.headers);
       headers.set(
         "Content-Security-Policy",
@@ -224,6 +235,13 @@ async function start() {
       webSecurity: true,
     },
   });
+  let closingWindow = false;
+  window.on('close', event => {
+    if (closingWindow || selfTest) return;
+    event.preventDefault();
+    window.webContents.executeJavaScript('window.vusFlush ? window.vusFlush() : true')
+      .catch(() => {}).finally(() => { closingWindow = true; window.close(); });
+  });
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event, url) => {
     const u = new URL(url);
@@ -237,6 +255,7 @@ async function start() {
         error: `Renderer load ${code}: ${description}`,
       });
   });
+  studio3 = require('./lib/studio3-ipc.cjs').register({handle,dialog,shell,getWindow:()=>window,getTools:()=>tools,root:path.join(app.getPath('userData'),'studio3'),resultsRoot,selfTest:v3Test,finishTest});
   handle("tools:status", () => ({ ...status, selfTest }));
   handle("tools:retry", () => prepare());
   handle("tools:choose", async () => {
@@ -257,7 +276,7 @@ async function start() {
       };
       await saveConfig(toolsRoot, pair);
       attachTools(pair);
-      await window.loadURL("vus://studio/");
+      await window.loadURL(selfTest && !v3Test ? "vus://studio/" : "vus://studio/v3/index.html");
     } catch (error) {
       broadcast({
         phase: "error",
@@ -326,7 +345,7 @@ async function start() {
           ok: false,
           error: "Desktop integration test timed out",
         }),
-      240000,
+      480000,
     );
   }
   await window.loadFile(path.join(__dirname, "splash.html"));
@@ -353,9 +372,8 @@ if (!selfTest && !app.requestSingleInstanceLock()) {
     if (quitting) return;
     quitting = true;
     controller?.abort();
-    if (engine) {
-      event.preventDefault();
-      engine.closeAll().finally(() => app.quit());
-    }
+    event.preventDefault();
+    Promise.allSettled([studio3?.close(), engine?.closeAll()]).finally(() => app.quit());
   });
 }
+
