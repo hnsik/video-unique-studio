@@ -4,7 +4,8 @@ const path = require("node:path");
 const os = require("node:os");
 const { ensureTools } = require("../lib/dependencies.cjs");
 (async () => {
-  const tools = await ensureTools({
+  let tools;
+  for(let attempt=0;attempt<3;attempt++){try{tools = await ensureTools({
     root: path.join(
       process.env.LOCALAPPDATA || os.tmpdir(),
       "VideoUniqueStudio",
@@ -17,6 +18,7 @@ const { ensureTools } = require("../lib/dependencies.cjs");
         console.log(state.message);
     },
   });
+  break;}catch(error){if(attempt===2||!error.message.includes('Не удалось скачать FFmpeg'))throw error;console.log('Повтор загрузки проверенного FFmpeg: '+(attempt+2));await new Promise(resolve=>setTimeout(resolve,1000*2**attempt));}}
   if (process.env.GITHUB_PATH)
     await fs.appendFile(
       process.env.GITHUB_PATH,
